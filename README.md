@@ -14,26 +14,32 @@
 | 🧭 岗位路线 | 初级运维 / DevOps / SRE / 云计算四条学习路线图 + 对应题集进度 |
 | 🤖 AI 助手 | 可选接入 OpenAI 兼容 API（GLM/DeepSeek/OpenAI）：模拟面试官、题目追问、生成新题一键入库 |
 
-## 快速开始（本地开发）
+## 快速开始
 
-> 所有工具与缓存都隔离在项目目录 `.tools/` 内，不污染系统环境。
+### 日常使用：桌面一键启动（推荐）
 
-**前置要求**：本机已装 Docker Desktop（实操实验室需要）、Node.js 18+。
-JDK 17 与 Maven 仓库已包含在 `.tools/`（无需自己安装 JDK）。
+桌面上已有 **「DevOpsHelper 一键启动」** 快捷方式（指向 `scripts/start-all.cmd`）。开机后双击它，脚本会自动：
+
+1. 启动 Docker Desktop（若未运行，首次约 1-3 分钟）
+2. 启动 MySQL 容器（数据在 `./docker-data/mysql`，可重复执行）
+3. 启动后端服务（同时托管前端页面）
+4. 自动打开浏览器 **http://localhost:9800**
+
+停止全部服务：双击 `scripts/stop-all.cmd`。
+
+> 注：后端已托管前端构建产物，日常使用只有「一个 Java 进程 + 一个 MySQL 容器」，无需 Node。
+
+### 开发模式（改代码时）
+
+**前置要求**：本机已装 Docker Desktop、Node.js 18+。JDK 17 与 Maven 仓库已包含在 `.tools/`（无需自己安装 JDK），所有工具与缓存隔离在项目内。
 
 ```bash
-# 1. 启动开发数据库（MySQL，数据在 ./docker-data/mysql）
-bash scripts/dev-mysql.sh
+bash scripts/build-backend.sh        # 编译打包后端 + 重新构建前端 dist
+bash scripts/run-backend.sh          # 启动后端 http://localhost:9800（日志 .tools/backend.log）
 
-# 2. 编译并启动后端（首次启动自动建表+导入100题种子数据）
-bash scripts/build-backend.sh
-bash scripts/run-backend.sh          # http://localhost:9800  日志: .tools/backend.log
-
-# 3. 启动前端
-bash scripts/dev-frontend.sh         # http://localhost:5173
+# 前端改动后的热更新开发（可选，仅前端开发时需要）
+bash scripts/dev-frontend.sh         # Vite dev server http://localhost:5173
 ```
-
-浏览器打开 **http://localhost:5173** 即可使用。
 
 ### 实验室首次使用
 
