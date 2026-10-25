@@ -5,6 +5,7 @@ setlocal enabledelayedexpansion
 set "ROOT=F:\code-java\devopsHepler"
 set "JAVAW=%ROOT%\.tools\jdk-17.0.20.1+1\bin\javaw.exe"
 set "JAR=%ROOT%\backend\target\devops-helper-0.1.0-SNAPSHOT.jar"
+set "URL=http://127.0.0.1:9800"
 cd /d "%ROOT%"
 
 echo ==========================================
@@ -60,11 +61,8 @@ if not exist "%JAR%" (
     pause
     exit /b 1
 )
-if not exist "%ROOT%\frontend\dist\index.html" (
-    echo [提示] 前端页面未构建，仅启动 API。可执行: cd frontend 然后 npm run build
-)
 echo [3/4] 启动后端 :9800 ...
-start "" /B "%JAVAW%" -jar "%JAR%" > "%ROOT%\.tools\backend.log" 2>&1
+start "" /B "%JAVAW%" -jar "%JAR%"
 set /a BE_TRIES=0
 :wait_backend
 timeout /t 3 /nobreak >nul
@@ -76,14 +74,22 @@ echo [错误] 后端启动失败，日志: .tools\backend.log
 pause
 exit /b 1
 :backend_ok
-echo [3/4] 服务已就绪 http://localhost:9800
+echo [3/4] 后端已就绪
 
-REM ---------- 4/4 打开浏览器 ----------
-echo [4/4] 打开浏览器...
-start "" "http://localhost:9800"
+REM ---------- 4/4 校验页面并打开浏览器 ----------
+%SystemRoot%\System32\curl.exe -s -m 8 -o "%ROOT%\.tools\page-check.tmp" %URL%/
+findstr /i /c:"<html" "%ROOT%\.tools\page-check.tmp" >nul 2>&1
+if errorlevel 1 (
+    echo [错误] 后端在运行但页面未托管！请执行: bash scripts/build-backend.sh 后重新双击本快捷方式
+    pause
+    exit /b 1
+)
+echo [4/4] 页面校验通过，打开浏览器...
+start "" "%URL%"
 echo.
 echo ==========================================
-echo   启动完成！停止服务: scripts\stop-all.cmd
+echo   启动完成！访问地址: %URL%
+echo   停止服务: scripts\stop-all.cmd
 echo ==========================================
-timeout /t 5 >nul
+timeout /t 6 >nul
 exit /b 0
