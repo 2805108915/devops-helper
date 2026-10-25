@@ -1,0 +1,24 @@
+code: net-http-bench
+name: 简易压测与容量感知
+topic: shell
+difficulty: 2
+sortOrder: 93
+tags: [性能]
+timeLimitMinutes: 40
+scenario: |
+  用 ab 或 curl 循环对本地 nginx 发 100 个请求，统计完成总耗时写入 /root/bench.txt（含 "100" 与秒数）。
+setup: |
+  nginx 2>/dev/null || true; echo bench > /var/www/html/index.html
+check: |
+  if [ -f /root/bench.txt ] && grep -qE "100" /root/bench.txt && grep -qE "[0-9]+\.[0-9]+" /root/bench.txt; then
+    echo '{"pass":true,"score":100,"message":"完成！基线数据到手"}'
+  else
+    echo '{"pass":false,"score":0,"message":"time + for循环100次curl 结果落盘"}'
+  fi
+hints:
+  - ab -n 100 -c 10 http://127.0.0.1/（ab 若无则用 for+curl）
+  - 或：time (for i in $(seq 100); do curl -s -o /dev/null URL; done)
+  - 结果（含请求数与时间）写入文件
+solution: |
+  { echo "requests=100"; time (for i in $(seq 1 100); do curl -s -o /dev/null http://127.0.0.1/; done); } > /root/bench.txt 2>&1
+  cat /root/bench.txt

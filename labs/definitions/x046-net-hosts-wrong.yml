@@ -1,0 +1,37 @@
+code: net-hosts-wrong
+name: hosts 劫持排查
+topic: network
+difficulty: 2
+sortOrder: 46
+tags: [hosts]
+timeLimitMinutes: 30
+scenario: |
+  应用访问 api.internal 总是返回错误页面。
+  任务：排查 hosts 劫持，修正 /etc/hosts 中 api.internal 的解析（正确 IP 见 /opt/hint-ip 文件），使 curl api.internal 返回 200。
+setup: |
+  echo "10.9.9.9" > /opt/hint-ip
+  mkdir -p /var/www/real
+  echo "RIGHT_SITE" > /var/www/real/index.html
+  cat > /etc/nginx/sites-available/real <<EOF
+  server { listen 80; server_name api.internal; root /var/www/real; }
+  EOF
+  ln -sf /etc/nginx/sites-available/real /etc/nginx/sites-enabled/real
+  echo "127.0.0.1 localhost
+  10.1.1.1 api.internal" > /etc/hosts
+  nginx 2>/dev/null || true
+check: |
+  out=$(curl -s --max-time 3 http://api.internal/ 2>/dev/null)
+  if echo "$out" | grep -q RIGHT_SITE; then
+    echo '{"pass":true,"score":100,"message":"完成！解析已纠正"}'
+  else
+    echo '{"pass":false,"score":0,"message":"改 /etc/hosts 把 api.internal 指向正确IP后重试"}'
+  fi
+hints:
+  - 看现状：curl -v http://api.internal 和 cat /etc/hosts
+  - 正确 IP 在 /opt/hint-ip
+  - 改完 hosts 直接 curl 验证
+solution: |
+  cat /opt/hint-ip
+  cat /etc/hosts
+  sed -i "s/^10.1.1.1 api.internal/$(cat /opt/hint-ip) api.internal/" /etc/hosts
+  curl -s http://api.internal/

@@ -1,0 +1,36 @@
+code: cron-not-running
+name: cron 守护进程没启动
+topic: shell
+difficulty: 1
+sortOrder: 76
+tags: [cron]
+timeLimitMinutes: 30
+scenario: |
+  crontab 有任务但从不执行。
+  任务：启动 cron 守护进程，手动执行一次 /opt/backup.sh，确保 /backup/backup.log 出现新行且 crontab 里有该任务（每小时）。
+setup: |
+  mkdir -p /backup /opt
+  cat > /opt/backup.sh <<EOF
+  #!/bin/bash
+  echo "backup $(date +%T)" >> /backup/backup.log
+  EOF
+  chmod +x /opt/backup.sh
+  echo "0 * * * * /opt/backup.sh" | crontab -
+  pkill -x cron 2>/dev/null; echo ok
+check: |
+  /opt/backup.sh
+  if pgrep -x cron >/dev/null && [ -f /backup/backup.log ] && crontab -l 2>/dev/null | grep -q backup.sh; then
+    echo '{"pass":true,"score":100,"message":"完成！定时任务恢复"}'
+  else
+    echo '{"pass":false,"score":0,"message":"启动 cron（直接运行 cron 命令）；手动跑一次脚本"}'
+  fi
+hints:
+  - 容器里启动：cron（或 service cron start）
+  - 手动验证：/opt/backup.sh 后看日志
+  - 确认任务：crontab -l
+solution: |
+  cron
+  pgrep -x cron
+  /opt/backup.sh
+  tail /backup/backup.log
+  crontab -l

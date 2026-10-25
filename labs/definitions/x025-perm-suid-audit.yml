@@ -1,0 +1,33 @@
+code: perm-suid-audit
+name: SUID 文件安全审计
+topic: linux
+difficulty: 2
+sortOrder: 25
+tags: [SUID, 安全]
+timeLimitMinutes: 30
+scenario: |
+  安全基线：SUID 程序可能被提权利用。
+  任务：找出 /opt/tools 下被设置了 SUID 的可疑脚本并去掉 SUID 位（保留普通权限）。
+setup: |
+  mkdir -p /opt/tools
+  printf "#!/bin/bash\nid\n" > /opt/tools/check.sh
+  cp /bin/ls /opt/tools/myls
+  printf "#!/bin/bash\nwhoami\n" > /opt/tools/info.sh
+  chmod 4755 /opt/tools/check.sh /opt/tools/myls /opt/tools/info.sh
+  chmod 755 /opt/tools/info.sh
+check: |
+  s=$(find /opt/tools -perm -4000 | wc -l)
+  x=$(find /opt/tools -perm -1000 -type f | wc -l)
+  if [ "$s" -eq 0 ]; then
+    echo '{"pass":true,"score":100,"message":"完成！SUID 全部清除"}'
+  else
+    echo '{"pass":false,"score":0,"message":"还剩 '$s' 个 SUID 文件（find -perm -4000）"}'
+  fi
+hints:
+  - 找 SUID：find /opt/tools -perm -4000
+  - 去掉：chmod u-s 或 chmod 755
+  - 验证再查一遍
+solution: |
+  find /opt/tools -perm -4000 -ls
+  find /opt/tools -perm -4000 -exec chmod u-s {} \;
+  find /opt/tools -perm -4000 | wc -l

@@ -1,0 +1,36 @@
+code: cron-wrong-path
+name: crontab 路径写错
+topic: shell
+difficulty: 2
+sortOrder: 77
+tags: [cron]
+timeLimitMinutes: 30
+scenario: |
+  任务日志三天没更新。脚本在 /opt/backup.sh，但 crontab 写成了 /opt/scripts/backup.sh。
+  任务：修正 crontab 路径（保持每小时执行），启动 cron，手动执行验证日志新增。
+setup: |
+  mkdir -p /backup
+  cat > /opt/backup.sh <<EOF
+  #!/bin/bash
+  echo "backup $(date +%T)" >> /backup/backup.log
+  EOF
+  chmod +x /opt/backup.sh
+  echo "0 * * * * /opt/scripts/backup.sh" | crontab -
+  echo old > /backup/backup.log
+  pkill -x cron 2>/dev/null; echo ok
+check: |
+  if crontab -l | grep -q " /opt/backup.sh" && pgrep -x cron >/dev/null && [ "$(wc -l < /backup/backup.log)" -ge 1 ]; then
+    echo '{"pass":true,"score":100,"message":"完成！路径修正任务恢复"}'
+  else
+    echo '{"pass":false,"score":0,"message":"crontab -e 改路径；启动 cron；手动跑一次"}'
+  fi
+hints:
+  - 找真实路径：ls /opt/backup.sh
+  - crontab -e 修正
+  - cron 启动 + 手动验证
+solution: |
+  crontab -l
+  echo "0 * * * * /opt/backup.sh" | crontab -
+  cron
+  /opt/backup.sh
+  crontab -l; tail -1 /backup/backup.log

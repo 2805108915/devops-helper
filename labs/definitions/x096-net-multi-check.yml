@@ -1,0 +1,40 @@
+code: net-multi-check
+name: 机房连通性巡检
+topic: network
+difficulty: 2
+sortOrder: 96
+tags: [综合]
+timeLimitMinutes: 40
+scenario: |
+  巡检清单 /opt/targets：每行 "名称 端口"，全是本机服务。
+  任务：逐项检查 127.0.0.1 的端口连通（nc/curl），输出 "名称 OK/FAIL" 到 /root/netcheck.txt。
+setup: |
+  nginx 2>/dev/null || true
+  printf "web 80\nredis 6379\nnone 9999\n" > /opt/targets
+  pkill -x redis-server 2>/dev/null; sleep 1
+  cat > /etc/redis/redis.conf <<EOF
+  bind 127.0.0.1
+  port 6379
+  daemonize yes
+  logfile /tmp/redis.log
+  dir /tmp
+  EOF
+  redis-server /etc/redis/redis.conf 2>/dev/null; sleep 1
+check: |
+  ok=$(grep -cE "web OK" /root/netcheck.txt 2>/dev/null)
+  fail=$(grep -cE "none FAIL" /root/netcheck.txt 2>/dev/null)
+  if [ "${ok:-0}" -ge 1 ] && [ "${fail:-0}" -ge 1 ] && [ "$(wc -l < /root/netcheck.txt)" -ge 3 ]; then
+    echo '{"pass":true,"score":100,"message":"完成！巡检报告正确"}'
+  else
+    echo '{"pass":false,"score":0,"message":"web应OK、none应FAIL（9999没人听）"}'
+  fi
+hints:
+  - while read name port：nc -z -w1 127.0.0.1 $port
+  - 结果追加 /root/netcheck.txt
+  - 三行都要有
+solution: |
+  #!/bin/bash
+  while read -r name port; do
+    nc -z -w1 127.0.0.1 "$port" >/dev/null 2>&1 && echo "$name OK" || echo "$name FAIL"
+  done < /opt/targets > /root/netcheck.txt
+  cat /root/netcheck.txt

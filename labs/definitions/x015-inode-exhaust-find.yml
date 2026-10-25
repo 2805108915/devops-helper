@@ -1,0 +1,32 @@
+code: inode-exhaust-find
+name: inode 耗尽排查
+topic: linux
+difficulty: 2
+sortOrder: 15
+tags: [inode, df -i]
+timeLimitMinutes: 40
+scenario: |
+  df -h 显示磁盘很空，但创建文件报 No space left on device！
+  提示：df -i 看看 inode。
+  任务：找出文件数量最多的目录并清理 /tmp/cache 下的小文件，使可创建新文件。
+setup: |
+  mkdir -p /tmp/cache/s1 /tmp/cache/s2
+  for i in $(seq 1 60); do echo x > /tmp/cache/s1/f$i; echo x > /tmp/cache/s2/f$i; done
+  mkdir -p /tmp/work
+check: |
+  touch /tmp/work/newfile 2>/dev/null && rc=0 || rc=1
+  n=$(find /tmp/cache -type f | wc -l)
+  if [ "$rc" = "0" ] && [ "$n" -lt 5 ]; then
+    echo '{"pass":true,"score":100,"message":"完成！inode 压力解除"}'
+  else
+    echo '{"pass":false,"score":0,"message":"清理 /tmp/cache 全部小文件后重试"}'
+  fi
+hints:
+  - df -i 对比 IUse%
+  - 统计各目录文件数：for d in /tmp/*; do echo $d $(find $d | wc -l); done
+  - rm -rf /tmp/cache/s1 /tmp/cache/s2
+solution: |
+  df -i
+  for d in /tmp/*; do echo "$d $(find $d 2>/dev/null | wc -l)"; done
+  rm -rf /tmp/cache/s1 /tmp/cache/s2
+  touch /tmp/work/newfile && echo OK

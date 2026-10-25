@@ -1,0 +1,29 @@
+code: net-curl-diagnose
+name: HTTP 分层诊断
+topic: network
+difficulty: 1
+sortOrder: 49
+tags: [curl]
+timeLimitMinutes: 30
+scenario: |
+  用 curl 完成一次诊断报告：访问 http://127.0.0.1:80 并把状态码写入 /root/code.txt，把总耗时写入 /root/time.txt。
+setup: |
+  mkdir -p /var/www/html
+  echo "diag ok" > /var/www/html/index.html
+  nginx 2>/dev/null || nginx -s reload 2>/dev/null || true
+check: |
+  c=$(cat /root/code.txt 2>/dev/null | grep -oE "^[0-9]{3}$")
+  t=$(cat /root/time.txt 2>/dev/null | grep -oE "^[0-9]+\.[0-9]+$")
+  if [ "$c" = "200" ] && [ -n "$t" ]; then
+    echo '{"pass":true,"score":100,"message":"完成！诊断数据采集到位"}'
+  else
+    echo '{"pass":false,"score":0,"message":"code.txt=200；time.txt=耗时秒数（curl -w）"}'
+  fi
+hints:
+  - 状态码：curl -o /dev/null -s -w "%{http_code}" http://127.0.0.1:80/
+  - 耗时：同上 -w 加 %{time_total}
+  - 分别写入两个文件
+solution: |
+  curl -o /dev/null -s -w "%{http_code}" http://127.0.0.1:80/ > /root/code.txt
+  curl -o /dev/null -s -w "%{time_total}" http://127.0.0.1:80/ > /root/time.txt
+  cat /root/code.txt /root/time.txt

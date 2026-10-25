@@ -1,0 +1,31 @@
+code: shell-ip-top-cities
+name: 多维日志统计（IP+状态码）
+topic: shell
+difficulty: 2
+sortOrder: 90
+tags: [awk, 必考]
+timeLimitMinutes: 40
+scenario: |
+  两份报告：1) TOP5 IP 2) 各状态码计数。
+  任务：分别写入 /root/r1.txt（"次数 IP"）与 /root/r2.txt（"次数 状态码"）。
+setup: |
+  mkdir -p /var/log/app
+  for i in $(seq 1 40); do echo "10.0.0.5 - - [x] \"GET /a\" 200"; done > /var/log/app/access.log
+  for i in $(seq 1 25); do echo "10.0.0.6 - - [x] \"GET /b\" 500"; done >> /var/log/app/access.log
+  for i in $(seq 1 10); do echo "10.0.0.7 - - [x] \"GET /c\" 404"; done >> /var/log/app/access.log
+check: |
+  r1=$(head -1 /root/r1.txt 2>/dev/null | grep -c "10.0.0.5")
+  r2=$(grep -c "404" /root/r2.txt 2>/dev/null)
+  if [ "$r1" -ge 1 ] && [ "$r2" -ge 1 ]; then
+    echo '{"pass":true,"score":100,"message":"完成！双维统计正确"}'
+  else
+    echo '{"pass":false,"score":0,"message":"两份报告都要：awk列1/列9 分别统计"}'
+  fi
+hints:
+  - IP：awk '{print $1}' | sort | uniq -c | sort -rn | head -5
+  - 状态码：$9 列
+  - 分别落盘两个文件
+solution: |
+  awk '{print $1}' /var/log/app/access.log | sort | uniq -c | sort -rn | head -5 > /root/r1.txt
+  awk '{print $9}' /var/log/app/access.log | sort | uniq -c | sort -rn > /root/r2.txt
+  cat /root/r1.txt /root/r2.txt

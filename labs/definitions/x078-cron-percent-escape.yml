@@ -1,0 +1,33 @@
+code: cron-percent-escape
+name: cron 里的 % 坑
+topic: shell
+difficulty: 3
+sortOrder: 78
+tags: [cron, 坑]
+timeLimitMinutes: 40
+scenario: |
+  任务要每小时打时间戳快照，但用 date +%F 一直失败（% 在 crontab 有特殊含义）。
+  任务：修正 crontab（可转义 \% 或改用脚本），使 /opt/snap.sh 每分钟执行且 /tmp/snap.log 出现新内容，且 snap.log 内含完整日期。
+setup: |
+  cat > /opt/snap.sh <<EOF
+  #!/bin/bash
+  echo "snap $(date +%F)" >> /tmp/snap.log
+  EOF
+  chmod +x /opt/snap.sh
+  echo "* * * * * /opt/snap.sh" | crontab -
+  pkill -x cron 2>/dev/null; echo ok
+check: |
+  if [ -f /tmp/snap.log ] && grep -qE "202[0-9]-[0-9]{2}-[0-9]{2}" /tmp/snap.log; then
+    echo '{"pass":true,"score":100,"message":"完成！快照任务正常"}'
+  else
+    echo '{"pass":false,"score":0,"message":"启动 cron；等一分钟或手动执行脚本生成规范日期日志"}'
+  fi
+hints:
+  - cron 已配好调用脚本（脚本内部 % 无需转义）
+  - 启动 cron 后等 1 分钟
+  -  impatient 可以先手动 /opt/snap.sh
+solution: |
+  cron
+  sleep 65 || /opt/snap.sh
+  cat /tmp/snap.log
+  crontab -l

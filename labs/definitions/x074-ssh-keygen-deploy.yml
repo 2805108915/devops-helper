@@ -1,0 +1,33 @@
+code: ssh-keygen-deploy
+name: 密钥对生成与部署
+topic: linux
+difficulty: 2
+sortOrder: 74
+tags: [ssh]
+timeLimitMinutes: 40
+scenario: |
+  给 root 生成 ed25519 密钥并把公钥追加到 appuser 的 authorized_keys（权限规范），验证 ssh 免密登录 appuser 成功。
+setup: |
+  id -u appuser >/dev/null 2>&1 || useradd -m -s /bin/bash appuser
+  mkdir -p /run/sshd /home/appuser/.ssh
+  rm -f /root/.ssh/id_ed25519*
+  pkill -x sshd 2>/dev/null; sleep 1; /usr/sbin/sshd
+check: |
+  k=$(ls /root/.ssh/id_ed25519.pub 2>/dev/null | wc -l)
+  a=$(grep -c "ssh-ed25519" /home/appuser/.ssh/authorized_keys 2>/dev/null || echo 0)
+  p=$(stat -c %a /home/appuser/.ssh/authorized_keys 2>/dev/null)
+  if [ "$k" = "1" ] && [ "$a" -ge 1 ] && [ "$p" = "600" ]; then
+    echo '{"pass":true,"score":100,"message":"完成！密钥部署规范"}'
+  else
+    echo '{"pass":false,"score":0,"message":"ssh-keygen -t ed25519；公钥入authorized_keys(600)"}'
+  fi
+hints:
+  - 生成：ssh-keygen -t ed25519 -N "" -f ~/.ssh/id_ed25519
+  - 部署：cat 公钥 >> /home/appuser/.ssh/authorized_keys
+  - chown appuser + chmod 600
+solution: |
+  ssh-keygen -t ed25519 -N "" -f /root/.ssh/id_ed25519
+  cat /root/.ssh/id_ed25519.pub >> /home/appuser/.ssh/authorized_keys
+  chown -R appuser:appuser /home/appuser/.ssh
+  chmod 700 /home/appuser/.ssh; chmod 600 /home/appuser/.ssh/authorized_keys
+  ssh -o StrictHostKeyChecking=no appuser@127.0.0.1 whoami

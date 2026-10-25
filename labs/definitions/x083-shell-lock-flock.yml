@@ -1,0 +1,32 @@
+code: shell-lock-flock
+name: 任务防并发（flock）
+topic: shell
+difficulty: 3
+sortOrder: 83
+tags: [并发]
+timeLimitMinutes: 40
+scenario: |
+  任务每分钟跑一次但耗时不定，会重叠执行。
+  任务：给 /opt/job.sh 加 flock 单实例锁（在脚本内 exec 9>lock; flock -n 9 || exit 0），验证脚本可正常运行且产生输出 /tmp/job.log。
+setup: |
+  cat > /opt/job.sh <<EOF
+  #!/bin/bash
+  echo "job $(date +%T)" >> /tmp/job.log
+  sleep 2
+  EOF
+  chmod +x /opt/job.sh
+check: |
+  /opt/job.sh >/dev/null 2>&1 & /opt/job.sh >/dev/null 2>&1; sleep 3
+  if grep -q "exec 9>" /opt/job.sh && grep -q "flock -n 9" /opt/job.sh && [ -f /tmp/job.log ]; then
+    echo '{"pass":true,"score":100,"message":"完成！单实例锁就位"}'
+  else
+    echo '{"pass":false,"score":0,"message":"脚本内加：exec 9>/tmp/job.lock; flock -n 9 || exit 0"}'
+  fi
+hints:
+  - 脚本开头：exec 9>/tmp/job.lock
+  - flock -n 9 || exit 0
+  - 并发跑两次验证只执行一个
+solution: |
+  sed -i "1a exec 9>/tmp/job.lock\nflock -n 9 || exit 0" /opt/job.sh
+  /opt/job.sh & /opt/job.sh; wait
+  wc -l /tmp/job.log

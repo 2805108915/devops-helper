@@ -1,0 +1,34 @@
+code: perm-service-user
+name: 应用用户读不到配置
+topic: linux
+difficulty: 2
+sortOrder: 22
+tags: [chmod, chown]
+timeLimitMinutes: 30
+scenario: |
+  应用以 appuser 运行，但 /opt/app/config 权限是 root:root 600。
+  任务：让 appuser 能读取 /opt/app/config（推荐最小权限做法），并让 start.sh 可执行。
+setup: |
+  id -u appuser >/dev/null 2>&1 || useradd -m -s /bin/bash appuser
+  mkdir -p /opt/app
+  echo "DB=local" > /opt/app/config
+  chown root:root /opt/app/config; chmod 600 /opt/app/config
+  printf "#!/bin/bash\necho ok\n" > /opt/app/start.sh; chmod 644 /opt/app/start.sh
+check: |
+  ok=1
+  su appuser -c 'cat /opt/app/config >/dev/null 2>&1' || ok=0
+  [ -x /opt/app/start.sh ] || ok=0
+  if [ "$ok" = "1" ]; then
+    echo '{"pass":true,"score":100,"message":"完成！appuser 可读且脚本可执行"}'
+  else
+    echo '{"pass":false,"score":0,"message":"验证：su appuser -c cat config；chmod +x start.sh"}'
+  fi
+hints:
+  - 测试读：su appuser -c "cat /opt/app/config"
+  - 最小权限：chgrp appuser config && chmod 640
+  - 执行位：chmod +x start.sh
+solution: |
+  chgrp appuser /opt/app/config
+  chmod 640 /opt/app/config
+  chmod +x /opt/app/start.sh
+  su appuser -c 'cat /opt/app/config && /opt/app/start.sh'

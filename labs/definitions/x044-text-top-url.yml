@@ -1,0 +1,28 @@
+code: text-top-url
+name: 访问日志 TOP10 URL
+topic: shell
+difficulty: 2
+sortOrder: 44
+tags: [awk, 必考]
+timeLimitMinutes: 30
+scenario: |
+  性能分析需要热点接口。
+  任务：统计 /var/log/app/access.log 第 7 列 URL 的 TOP10（次数降序）写入 /root/top-url.txt。
+setup: |
+  mkdir -p /var/log/app
+  for i in $(seq 1 50); do echo "10.0.0.1 - - [x] \"GET /api/a HTTP/1.1\" 200"; done > /var/log/app/access.log
+  for i in $(seq 1 30); do echo "10.0.0.2 - - [x] \"GET /api/b HTTP/1.1\" 200"; done >> /var/log/app/access.log
+  for i in $(seq 1 12); do echo "10.0.0.3 - - [x] \"GET / HTTP/1.1\" 200"; done >> /var/log/app/access.log
+check: |
+  if [ -f /root/top-url.txt ] && head -1 /root/top-url.txt | grep -q "/api/a" && [ "$(wc -l < /root/top-url.txt)" -ge 3 ]; then
+    echo '{"pass":true,"score":100,"message":"完成！TOP URL 统计正确"}'
+  else
+    echo '{"pass":false,"score":0,"message":"四件套：awk取列 | sort | uniq -c | sort -rn | head"}'
+  fi
+hints:
+  - 第7列：awk '{print $7}'
+  - sort | uniq -c | sort -rn
+  - head -10 落盘
+solution: |
+  awk '{print $7}' /var/log/app/access.log | sort | uniq -c | sort -rn | head -10 > /root/top-url.txt
+  cat /root/top-url.txt

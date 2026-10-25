@@ -1,0 +1,30 @@
+code: proc-priority
+name: 降低批任务优先级（nice）
+topic: linux
+difficulty: 2
+sortOrder: 31
+tags: [nice]
+timeLimitMinutes: 30
+scenario: |
+  凌晨批处理和在线服务抢 CPU。现有进程 batchjob 需要让路。
+  任务：把已运行的 batchjob 进程 nice 值调到 19（最低优先级），不影响其运行。
+setup: |
+  setsid sh -c 'exec -a batchjob sh -c "while :; do :; done"' >/dev/null 2>&1 < /dev/null &
+  sleep 2
+check: |
+  pid=$(pgrep -f 'exec -a batchjob' | head -1); [ -z "$pid" ] && pid=$(ps aux | grep [b]atchjob | awk '{print $2}' | head -1)
+  n=$(ps -o ni= -p "$pid" 2>/dev/null | tr -d ' ')
+  if [ -n "$pid" ] && [ "$n" = "19" ]; then
+    echo '{"pass":true,"score":100,"message":"完成！已让路在线服务"}'
+  else
+    echo '{"pass":false,"score":0,"message":"当前 nice='$n'（renice 19 -p PID）"}'
+  fi
+hints:
+  - 找 PID：ps aux | grep batchjob
+  - 改优先级：renice 19 -p <pid>
+  - 验证：ps -o ni,cmd -p <pid>
+solution: |
+  ps aux | grep [b]atchjob
+  PID=$(ps aux | grep [b]atchjob | awk '{print $2}' | head -1)
+  renice 19 -p $PID
+  ps -o pid,ni,cmd -p $PID

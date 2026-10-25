@@ -1,0 +1,27 @@
+code: cron-freq-fix
+name: 执行频率改错
+topic: shell
+difficulty: 1
+sortOrder: 80
+tags: [cron]
+timeLimitMinutes: 30
+scenario: |
+  要求每天 2:30 执行备份，但 crontab 被写成每月 30 号才跑。
+  任务：修正为每天 02:30（分 时 日 月 周），启动 cron。
+setup: |
+  echo "30 2 30 * * /bin/true" | crontab -
+  pkill -x cron 2>/dev/null; echo ok
+check: |
+  if crontab -l | grep -qE "^30 2 \* \* \*" && pgrep -x cron >/dev/null; then
+    echo '{"pass":true,"score":100,"message":"完成！频率修正"}'
+  else
+    echo '{"pass":false,"score":0,"message":"每天02:30 = 30 2 * * *；并启动 cron"}'
+  fi
+hints:
+  - 五个字段：分 时 日 月 周
+  - 每天 = 日/月/周 都 *
+  - echo 新条目 | crontab -
+solution: |
+  echo "30 2 * * * /bin/true" | crontab -
+  cron
+  crontab -l

@@ -1,0 +1,39 @@
+code: nginx-502-recover
+name: 综合排障：502 恢复
+topic: nginx
+difficulty: 3
+sortOrder: 91
+tags: [综合, 必考]
+timeLimitMinutes: 45
+scenario: |
+  完整故障：用户访问 http://127.0.0.1/api/ 返回 502。
+  架构：nginx 反代 9000 后端。后端进程挂了。
+  任务：定位并恢复，使 /api/ 返回 API_OK；把排查过程三行说明写入 /root/postmortem.txt（含"后端未运行"字样）。
+setup: |
+  mkdir -p /opt/bk; echo "API_OK" > /opt/bk/index.html
+  cat > /etc/nginx/sites-available/api502 <<EOF
+  server {
+      listen 80;
+      location /api/ { proxy_pass http://127.0.0.1:9000/; }
+  }
+  EOF
+  ln -sf /etc/nginx/sites-available/api502 /etc/nginx/sites-enabled/api502
+  rm -f /etc/nginx/sites-enabled/default
+  nginx 2>/dev/null || nginx -s reload 2>/dev/null || true
+check: |
+  out=$(curl -s --max-time 3 http://127.0.0.1/api/ 2>/dev/null)
+  if echo "$out" | grep -q API_OK && grep -q "后端未运行" /root/postmortem.txt 2>/dev/null; then
+    echo '{"pass":true,"score":100,"message":"完成！故障恢复并复盘"}'
+  else
+    echo '{"pass":false,"score":0,"message":"拉起后端9000；postmortem写清根因（后端未运行）"}'
+  fi
+hints:
+  - 复现：curl -I /api/ 得 502
+  - 区分：后端死(502) vs 后端慢(504)
+  - 修复：nohup python3 -m http.server 9000 --directory /opt/bk &；写复盘
+solution: |
+  curl -I http://127.0.0.1/api/
+  ss -tlnp | grep 9000 || echo 后端未运行
+  nohup python3 -m http.server 9000 --directory /opt/bk --bind 127.0.0.1 >/dev/null 2>&1 &
+  curl -s http://127.0.0.1/api/
+  printf "1. 现象:/api/ 502\n2. 根因:后端未运行(9000无监听)\n3. 恢复:拉起后端并加守护\n" > /root/postmortem.txt

@@ -1,0 +1,20 @@
+// 第四批快问快答（linux 补充）
+export const Q = [
+  { t: 'C', d: 1, q: 'ls -lh 中文件大小显示 2.0K 表示？', o: ['A. 人类可读约2KB', 'B. 2000字节精确', 'C. 磁盘块数', 'D. inode'], a: 'A。h=human readable。', g: ['基础'] },
+  { t: 'C', d: 1, q: 'mkdir 同时设权限 700？', o: ['A. mkdir -m 700 d', 'B. mkdir -p', 'C. chmod后补 only', 'D. 不支持'], a: 'A。-m 创建即授权（免 umask 影响）。', g: ['基础'] },
+  { t: 'C', d: 1, q: '查看二进制依赖库？', o: ['A. ldd /path/bin', 'B. cat', 'C. strings', 'D. file'], a: 'A。"not found" 依赖缺失导致起不来的排查。', g: ['基础'] },
+  { t: 'C', d: 1, q: 'md5sum 的运维用途？', o: ['A. 文件完整性校验（传输/篡改）', 'B. 加密存储', 'C. 压缩', 'D. 重命名'], a: 'A。发布包校验、监控配置变化。', g: ['基础'] },
+  { t: 'C', d: 1, q: '查看 shell 历史条数上限变量？', o: ['A. HISTSIZE', 'B. HISTFILE only', 'C. LIMIT', 'D. 无限制'], a: 'A。HISTSIZE 会话内条数，HISTFILESIZE 文件条数。', g: ['基础'] },
+  { t: 'C', d: 2, q: 'id 命令输出 uid=0 的用户是谁？', o: ['A. root', 'B. 第一个用户', 'C. 任意', 'D. 无意义'], a: 'A。uid=0 即 root 权限（无论名字）——安全审计看 uid 不看名。', g: ['安全'] },
+  { t: 'C', d: 2, q: '查看端口对应进程的 lsof 写法？', o: ['A. lsof -i:8080', 'B. lsof -p 8080', 'C. lsof -u 8080', 'D. lsof 8080'], a: 'A。-i 网络过滤；-p 是进程号；-u 是用户。', g: ['工具'] },
+  { t: 'C', d: 2, q: '把 /var/log 下所有 .conf 找出来但排除子目录 etc？', o: ['A. find /var/log -name "*.conf" -not -path "*/etc/*"', 'B. find | grep -v', 'C. 不支持', 'D. 只能两步'], a: 'A。-not -path 组合过滤。find 表达式是很强的语言。', g: ['find'] },
+  { t: 'C', d: 2, q: 'nl 与 cat -n 输出差异？', o: ['A. 基本相同，nl 可自定义格式', 'B. 完全不同', 'C. nl不编号', 'D. cat不编号'], a: 'A。nl -w 宽度、-s 分隔符。', g: ['基础'] },
+  { t: 'C', d: 2, q: 'cut -c1-10 的含义？', o: ['A. 每行第1到10字符', 'B. 第1和10列', 'C. 前10行', 'D. 字节数10'], a: 'A。-c 按字符（-b 字节；中文注意字节数）。', g: ['文本'] },
+  { t: 'C', d: 2, q: 'sh -c "cmd" 与直接 cmd 在脚本调度里的差别？', o: ['A. sh -c 明确起子shell执行字符串（xargs/su -c常用）', 'B. 相同', 'C. 前者更快', 'D. 后者危险'], a: 'A。组合执行（xargs -I{} sh -c "...{}..."）的载体。', g: ['语法'] },
+  { t: 'C', d: 2, q: 'tar 解包到指定目录？', o: ['A. tar -xzf f.tgz -C /dst', 'B. tar -C after', 'C. cd only', 'D. mv'], a: 'A。-C 指定目标目录（发布脚本常客）。', g: ['备份'] },
+  { t: 'C', d: 3, q: 'sysctl -p 做什么？', o: ['A. 重载 /etc/sysctl.conf', 'B. 查看内核版本', 'C. 关机', 'D. 重启网络'], a: 'A。改内核参数（如 somaxconn）后生效。', g: ['调优'] },
+  { t: 'C', d: 3, q: 'nohup.out 与重定向都没配时 nohup cmd & 的输出？', o: ['A. 默认写当前目录 nohup.out', 'B. 丢弃', 'C. 报错', 'D. 终端'], a: 'A。规范还是显式 >> log 2>&1。', g: ['基础'] },
+  { t: 'C', d: 3, q: 'systemd 的 After=network-online.target 需要额外启用什么？', o: ['A. systemctl enable NetworkManager-wait-online', 'B. 自动生效', 'C. 无此target', 'D. 重启即可'], a: 'A。不启用 wait-online 则 online target 立即过——启动依赖网络的服务仍可能连不上（经典坑）。', g: ['systemd', '坑'] },
+  { t: 'QA', d: 2, q: '把当前目录所有文件名含空格的文件批量把空格换下划线？', a: '```bash\nfor f in *" "*; do mv "$f" "${f// /_}"; done\n```\n${var// /_} 全局替换。引号必须。', g: ['实战'] },
+  { t: 'QA', d: 3, q: '磁盘 IO 高但不知道哪个文件在被读写，怎么定位？', a: '1. iotop -o 找进程\n2. cat /proc/<pid>/io 看累计读写\n3. lsof -p <pid> | grep -E "REG"（ Regular 文件）\n4. 深度：fatrace/bcc（biolatency-bpfcc）文件级追踪\n5. 场景联想：日志刷屏/数据库脏页/大文件构建', g: ['性能', '进阶'] },
+]

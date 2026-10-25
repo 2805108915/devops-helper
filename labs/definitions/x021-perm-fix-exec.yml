@@ -1,0 +1,29 @@
+code: perm-fix-exec
+name: 脚本没有执行权限
+topic: linux
+difficulty: 1
+sortOrder: 21
+tags: [chmod]
+timeLimitMinutes: 20
+scenario: |
+  /opt/app/start.sh 无法执行（Permission denied）。
+  任务：给所有者加执行权限，使 ./start.sh 能跑起来。
+setup: |
+  mkdir -p /opt/app
+  printf "#!/bin/bash\necho APP_STARTED_OK\n" > /opt/app/start.sh
+  chmod 644 /opt/app/start.sh
+check: |
+  out=$(/opt/app/start.sh 2>/dev/null)
+  if [ "$out" = "APP_STARTED_OK" ]; then
+    echo '{"pass":true,"score":100,"message":"完成！脚本可执行"}'
+  else
+    echo '{"pass":false,"score":0,"message":"还没执行权限（chmod u+x）"}'
+  fi
+hints:
+  - ls -l 看权限
+  - chmod u+x 或 755
+  - 验证：./start.sh
+solution: |
+  ls -l /opt/app/start.sh
+  chmod u+x /opt/app/start.sh
+  /opt/app/start.sh

@@ -1,0 +1,20 @@
+// Redis/MQ 补充题
+export const Q = [
+  { t: 'C', d: 1, q: 'Redis 单实例建议最大内存量级？', o: ['A. ~10GB 级（过大导致持久化/复制/恢复慢）', 'B. 越大越好', 'C. 1TB', 'D. 无限制'], a: 'A。超过就分片 Cluster 或业务拆分。fork 延迟与 RDB 恢复时间随内存涨。', g: ['Redis'] },
+  { t: 'C', d: 1, q: 'SCAN 与 KEYS 的区别？', o: ['A. SCAN 分批游标遍历不阻塞；KEYS 一次性阻塞主线程', 'B. SCAN更快更全', 'C. 相同', 'D. KEYS安全'], a: 'A。生产禁 KEYS *；SCAN COUNT 100 配循环。删大 key 用 UNLINK。', g: ['Redis', '必考'] },
+  { t: 'C', d: 1, q: 'Redis 的 hash tag 语法是？', o: ['A. {user1000}.order 与 {user1000}.profile 同slot', 'B. #key', 'C. key:tag', 'D. @key'], a: 'A。Cluster 下多 key 操作（事务/mget）要求同 slot。', g: ['Redis', '进阶'] },
+  { t: 'C', d: 2, q: 'pipeline 与 mget 的区别？', o: ['A. pipeline 批量发送省RTT；mget单命令取多key', 'B. 相同', 'C. mget更快必用', 'D. pipeline原子'], a: 'A。pipeline 非原子（每条独立执行）；事务原子但会阻塞更久。', g: ['Redis'] },
+  { t: 'C', d: 2, q: 'Redis 事务（MULTI/EXEC）的局限？', o: ['A. 不支持回滚、排队期命令出错不撤销', 'B. 原子完美', 'C. 只读', 'D. 不能批量'], a: 'A。复杂原子逻辑用 Lua；Lua 执行期间阻塞，别写慢脚本。', g: ['Redis'] },
+  { t: 'C', d: 2, q: 'redis-cli --pipe 与 -c 参数？', o: ['A. 大量导入模式 / Cluster 重定向跟随', 'B. 压缩/加密', 'C. 相同', 'D. 只读'], a: 'A。迁移导入数据与集群客户端模式的标准姿势。', g: ['Redis'] },
+  { t: 'C', d: 2, q: 'AOF 重写（rewrite）时机与风险？', o: ['A. 体积达比例触发fork子进程重写；期间写入缓冲，内存/CPU尖峰', 'B. 定时无风险', 'C. 手动only', 'D. 会丢数据必然'], a: 'A。大实例重写抖动排查点；auto-aof-rewrite-percentage 配置。', g: ['Redis', '进阶'] },
+  { t: 'C', d: 2, q: 'RDB 的 bgsave 与 save？', o: ['A. bgsave fork子进程不阻塞；save 阻塞主线程（禁产用）', 'B. 相同', 'C. save更安全', 'D. bgsave丢库'], a: 'A。fork 瞬间阻塞与 copy-on-write 内存翻倍风险（maxmemory 别顶格）。', g: ['Redis'] },
+  { t: 'C', d: 2, q: 'Kafka 的 __consumer_offsets 主题存？', o: ['A. 消费组位移（重平衡/回溯的依据）', 'B. 数据副本', 'C. 配置', 'D. 死信'], a: 'A。重置位移操作（--to-offset/ earliest）改的就是它。', g: ['Kafka', '进阶'] },
+  { t: 'C', d: 2, q: 'RocketMQ 与 Kafka 的核心差异点？', o: ['A. RocketMQ 低延迟/事务/延迟消息/推拉兼顾；Kafka 高吞吐流式/生态', 'B. 完全相同', 'C. Kafka功能多', 'D. 均无顺序'], a: 'A。国内电商常双用：Kafka 日志流 + RocketMQ 业务。', g: ['MQ'] },
+  { t: 'C', d: 2, q: '消息顺序性被破坏的常见原因？', o: ['A. 多分区+多线程乱序消费/重试乱序', 'B. MQ必然乱序', 'C. 网络延迟', 'D. 压缩'], a: 'A。保证：同 key 同分区 + 单线程/内存队列按 key 串行。', g: ['MQ', '高频'] },
+  { t: 'C', d: 2, q: 'Kafka producer 的 acks=1 与 acks=all？', o: ['A. leader确认 / ISR全部确认（all更可靠更慢）', 'B. 1条消息/all消息', 'C. 相同', 'D. 数字无义'], a: 'A。配合 min.insync.replicas 与 retries 构成可靠生产。', g: ['Kafka', '必考'] },
+  { t: 'C', d: 3, q: 'rebalance 风暴的诱因与治理？', o: ['A. 消费者频繁掉线（GC/超时）触发重分配：调 session/心跳/处理时长与 max.poll', 'B. 分区太多 only', 'C. 无解', 'D. 加机器必然'], a: 'A。max.poll.interval.ms 小于最慢处理时间是经典雷。', g: ['Kafka', '进阶'] },
+  { t: 'C', d: 3, q: 'Redis 过期 key 的删除时机带来的坑？', o: ['A. 惰性+定期：到期不立即删，内存可能滞留；大量同刻过期卡顿', 'B. 精准删除', 'C. 全立即删', 'D. 从不删除'], a: 'A。TTL 加随机抖动；监控 expired_keys 与内存曲线。', g: ['Redis', '进阶'] },
+  { t: 'QA', d: 2, q: '如何用 Redis 统计"今日在线用户数"？', a: '```redis\nSADD online:20261025 uid1 uid2\nSCARD online:20261025\n```\n亿级用 bitmap（SETBIT uid位）+ BITCOUNT，内存降两个量级；再大 HyperLogLog（误差0.81%）。按数据结构选型作答是亮点。', g: ['Redis', '实战'] },
+  { t: 'QA', d: 2, q: 'Redis 缓存预热怎么做？', a: '1. 上线/重启前脚本加载热点数据（从DB批量读入）\n2. 大促前全量预热+核对 key 数\n3. 分批加载（SCAN 源数据）避免瞬间打爆 DB\n4. 预热完成再放量（网关开关）\n防止冷启动缓存击穿是活动保障 checklist 必备项。', g: ['实战'] },
+  { t: 'QA', d: 3, q: '设计一个"削峰"方案：秒杀 10万 QPS 下单，DB 只能承 2千。', a: '1. 前置：CDN/静态化、按钮置灰防重\n2. 网关：限流（令牌桶 2万）+ 黑产风控\n3. Redis 预扣库存（Lua 原子判断+扣减）+ MQ 异步落单\n4. 消费端按 DB 能力匀速消费（2千/s）+ 幂等\n5. 兜底：库存不足快速失败、排队页体验\n核心思想：漏斗逐级衰减，最终写入速率与下游能力匹配。', g: ['架构', '必考'] },
+]

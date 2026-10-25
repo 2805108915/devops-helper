@@ -1,0 +1,36 @@
+code: shell-service-watchdog
+name: 进程守护脚本
+topic: shell
+difficulty: 3
+sortOrder: 89
+tags: [实战]
+timeLimitMinutes: 40
+scenario: |
+  写一个简单守护：每 10 秒检查 myweb（python 9000）是否存活，不在则拉起，日志写 /tmp/watchdog.log。
+  任务：启动守护脚本后台运行；判分时杀掉 myweb 后 30 秒内它应被自动拉活。
+setup: |
+  mkdir -p /opt/web; echo MYWEB > /opt/web/index.html
+  nohup python3 -m http.server 9000 --directory /opt/web --bind 127.0.0.1 >/dev/null 2>&1 &
+  sleep 1
+check: |
+  pkill -f "http.server 9000" 2>/dev/null; sleep 25
+  if curl -s --max-time 3 http://127.0.0.1:9000/ 2>/dev/null | grep -q MYWEB && [ -f /tmp/watchdog.log ]; then
+    echo '{"pass":true,"score":100,"message":"完成！守护拉活成功"}'
+  else
+    echo '{"pass":false,"score":0,"message":"后台守护脚本：pgrep检查+拉起+日志；保持运行等检测"}'
+  fi
+hints:
+  - 脚本：while :; do pgrep -f "http.server 9000" >/dev/null || nohup python3 ... &; sleep 10; done
+  - 日志追加 /tmp/watchdog.log
+  - nohup 后台运行守护脚本本身
+solution: |
+  cat > /opt/watch.sh <<EOF
+  #!/bin/bash
+  while :; do
+    pgrep -f "http.server 9000" >/dev/null || { nohup python3 -m http.server 9000 --directory /opt/web --bind 127.0.0.1 >/dev/null 2>&1 & echo "$(date +%T) restarted" >> /tmp/watchdog.log; }
+    sleep 10
+  done
+  EOF
+  chmod +x /opt/watch.sh
+  nohup /opt/watch.sh >/dev/null 2>&1 &
+  pgrep -f watch.sh

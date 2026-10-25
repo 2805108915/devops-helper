@@ -1,0 +1,28 @@
+code: shell-sed-replace
+name: 批量替换配置项
+topic: shell
+difficulty: 1
+sortOrder: 86
+tags: [sed]
+timeLimitMinutes: 30
+scenario: |
+  迁移环境：/opt/conf/app.conf 的 db_host 要从 10.0.0.1 换成 10.0.0.99。
+  任务：用 sed 修改文件（保留其他行），验证新值生效。
+setup: |
+  mkdir -p /opt/conf
+  printf "port=8080\ndb_host=10.0.0.1\ndb_user=root\n" > /opt/conf/app.conf
+check: |
+  v=$(grep "^db_host=" /opt/conf/app.conf | cut -d= -f2)
+  p=$(grep -c "^port=8080" /opt/conf/app.conf)
+  if [ "$v" = "10.0.0.99" ] && [ "$p" = "1" ]; then
+    echo '{"pass":true,"score":100,"message":"完成！精准替换"}'
+  else
+    echo '{"pass":false,"score":0,"message":"sed -i s/旧/新/ 定向替换 db_host 行"}'
+  fi
+hints:
+  - sed -i "s/^db_host=.*/db_host=10.0.0.99/" 文件
+  - 验证 grep
+  - 别动其他行
+solution: |
+  sed -i "s/^db_host=.*/db_host=10.0.0.99/" /opt/conf/app.conf
+  cat /opt/conf/app.conf

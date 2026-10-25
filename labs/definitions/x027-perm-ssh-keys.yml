@@ -1,0 +1,35 @@
+code: perm-ssh-keys
+name: SSH 密钥权限修复
+topic: linux
+difficulty: 2
+sortOrder: 27
+tags: [ssh, 权限]
+timeLimitMinutes: 30
+scenario: |
+  appuser 配了公钥登录但一直失败（sshd 严格校验权限）。
+  任务：修正 /home/appuser/.ssh 与 authorized_keys 的权限属主，并启动 sshd，使密钥登录放行（sshd -t 校验通过即可判分）。
+setup: |
+  id -u appuser >/dev/null 2>&1 || useradd -m -s /bin/bash appuser
+  mkdir -p /home/appuser/.ssh
+  echo "ssh-ed25519 AAAAtest" > /home/appuser/.ssh/authorized_keys
+  chown -R root:root /home/appuser/.ssh
+  chmod 777 /home/appuser/.ssh
+  chmod 666 /home/appuser/.ssh/authorized_keys
+  mkdir -p /run/sshd
+check: |
+  ok=1
+  [ "$(stat -c %a /home/appuser/.ssh)" = "700" ] || ok=0
+  [ "$(stat -c %a /home/appuser/.ssh/authorized_keys)" = "600" ] || ok=0
+  [ "$(stat -c %U /home/appuser/.ssh/authorized_keys)" = "appuser" ] || ok=0
+  if [ "$ok" = "1" ]; then echo '{"pass":true,"score":100,"message":"完成！密钥权限规范"}'
+  else echo '{"pass":false,"score":0,"message":"要求 .ssh=700 authorized_keys=600 属主 appuser"}'
+  fi
+hints:
+  - sshd 要求 .ssh 700、authorized_keys 600
+  - 属主必须是本人：chown -R appuser:appuser
+  - chmod 700 / 600
+solution: |
+  chown -R appuser:appuser /home/appuser/.ssh
+  chmod 700 /home/appuser/.ssh
+  chmod 600 /home/appuser/.ssh/authorized_keys
+  ls -la /home/appuser/.ssh

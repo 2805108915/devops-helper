@@ -1,0 +1,21 @@
+// Docker 补充题
+export const Q = [
+  { t: 'C', d: 1, q: 'docker run -d --name x img 中 -d 的含义？', o: ['A. 后台运行', 'B. 删除', 'C. 调试', 'D. 挂载'], a: 'A。detached；前台 -it 调试看日志。注意 -d + 应用秒退要 ps -a 查退出码。', g: ['命令'] },
+  { t: 'C', d: 1, q: 'docker inspect 主要看什么？', o: ['A. 全部元数据（IP/挂载/环境变量/退出原因/OOM）', 'B. 只看日志', 'C. 只看大小', 'D. 网络 only'], a: 'A。排障三件：State（OOMKilled/ExitCode）、NetworkSettings.IPAddress、Mounts。用 -f "template" 提取。', g: ['命令'] },
+  { t: 'C', d: 1, q: 'docker ps -a 与 --format 的用法？', o: ['A. 含已退出容器 / 自定义输出列', 'B. 排序', 'C. 过滤 only', 'D. 统计'], a: 'A。--format "{{.Names}}\\t{{.Status}}" 做清单脚本。', g: ['命令'] },
+  { t: 'C', d: 1, q: '镜像与容器的类比最贴切的是？', o: ['A. 类与实例', 'B. 文件与文件夹', 'C. 硬件与软件', 'D. 进程与线程'], a: 'A。镜像只读模板，容器=镜像+可写层运行态。', g: ['基础', '必考'] },
+  { t: 'C', d: 2, q: 'docker build 的缓存失效规则？', o: ['A. 某层指令/RUN内容或所COPY文件变化起全部失效', 'B. 随机', 'C. 只最后一层', 'D. 永不失效'], a: 'A。所以变动频繁的内容（源码）放最后；依赖清单先 COPY。', g: ['优化', '必考'] },
+  { t: 'C', d: 2, q: 'docker run -p 8080:80 端口不通，容器内服务正常，最可能？', o: ['A. 容器内服务监听127.0.0.1', 'B. 端口映射错方向', 'C. 都可能', 'D. 不可能'], a: 'C。两都常见：容器内须听 0.0.0.0；-p 宿主:容器 方向别写反。', g: ['排障', '高频'] },
+  { t: 'C', d: 2, q: 'ENV 与 ARG 的区别？', o: ['A. ENV 运行时也在；ARG 仅构建期', 'B. 相同', 'C. ARG更安全', 'D. ENV只构建期'], a: 'A。敏感信息放 ARG 也不安全（history 可见）——用 BuildKit secret。', g: ['Dockerfile'] },
+  { t: 'C', d: 2, q: 'HEALTHCHECK 状态在哪看、谁消费？', o: ['A. docker ps 的 (healthy)；compose --wait/orchestrator 消费', 'B. 自动重启', 'C. 日志 only', 'D. 无人用'], a: 'A。注意 unhealthy 不会自动替换容器——那是 K8s 的事。', g: ['配置'] },
+  { t: 'C', d: 2, q: '容器内 DNS 解析顺序（自定义网络）？', o: ['A. 内嵌DNS(容器/服务名) → 外部DNS', 'B. 直接公网', 'C. hosts only', 'D. 无DNS'], a: 'A。compose 服务名互通的原理。默认 bridge 没有内嵌 DNS（所以要用自定义网络）。', g: ['网络'] },
+  { t: 'C', d: 2, q: '容器 root 用户与宿主 root 的关系？', o: ['A. 容器root≈宿主root能力（危险，挂载后可改宿主文件）', 'B. 完全隔离安全', 'C. 普通用户', 'D. 无用户概念'], a: 'A。USER 指令降权是镜像安全基线；配合 --user 运行时覆盖。', g: ['安全'] },
+  { t: 'C', d: 2, q: 'docker compose 中 volumes 短语法的等价？', o: ['A. ./data:/app/data = bind mount', 'B. named volume', 'C. tmpfs', 'D. 无挂载'], a: 'A。裸名字（data:/x）才是 volume；顶层需声明 volumes:。', g: ['compose'] },
+  { t: 'C', d: 2, q: '容器日志 json-file 的限制配置在哪？', o: ['A. daemon.json（max-size/max-file）', 'B. Dockerfile', 'C. run 参数 only', 'D. 不可限'], a: 'A。/etc/docker/daemon.json 配置后 restart 生效；run 时 -log-opt 也能单容器限。磁盘被日志吃满的标准预防。', g: ['运维', '高频'] },
+  { t: 'C', d: 3, q: 'overlayfs 写时复制（COW）对性能的影响？', o: ['A. 首次修改大文件需复制整文件到可写层（慢且占空间）', 'B. 无影响', 'C. 更快', 'D. 只读更快'], a: 'A。数据库类容器别把数据放镜像层文件上——挂 volume 绕开 COW。', g: ['原理', '进阶'] },
+  { t: 'C', d: 3, q: 'docker stats 显示 CPU 300% 说明？', o: ['A. 多核累计（3核满载，除以核数得真实占比）', 'B. 报错', 'C. 超卖', 'D. 300%就绪'], a: 'A。与 top 单核百分比口径不同，面试坑点。', g: ['监控'] },
+  { t: 'C', d: 3, q: '容器内 PID1 是 sh（shell 包装）时优雅停机失效的补救？', o: ['A. exec 替换：CMD ["sh","-c","exec java -jar app.jar"]', 'B. 无解', 'C. 加 -t 即可', 'D. 重启容器'], a: 'A。exec 让 java 顶替 sh 成为 PID1。或用 tini 作 init。', g: ['原理', '必考'] },
+  { t: 'QA', d: 2, q: '如何把一个运行中容器的当前改动保存下来调试？正规做法是什么？', a: '调试可用 docker commit 临时固化（不推荐作分发流程）；正规做法：改 Dockerfile 重新构建（可追溯可复现）。commit 的镜像像"黑盒快照"，违反基础设施即代码原则。', g: ['素养'] },
+  { t: 'QA', d: 2, q: 'docker logs 看不到应用日志，为什么？', a: 'docker logs 只收集 PID1 的 stdout/stderr。应用把日志写文件（如 log4j 写盘）就看不到。方案：1) 应用改为输出标准输出（十二要素，推荐）2) 或挂载日志目录到宿主采集。', g: ['日志', '高频'] },
+  { t: 'QA', d: 3, q: '描述 CI 中用 Docker 构建镜像的完整质量环节。', a: '1. 多阶段构建（build→runtime）\n2. .dockerignore（防泄密+缓存失效）\n3. tag 用 git hash，禁 latest\n4. trivy 扫描（CRITICAL 阻断）\n5. 镜像签名（cosign 可选）\n6. 推 Harbor（保留策略+漏洞基线）\n7. 构建 SBOM 归档\n8. 缓存加速（buildkit cache-from/to）', g: ['CI', '实战'] },
+]

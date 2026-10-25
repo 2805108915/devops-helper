@@ -1,0 +1,33 @@
+code: linux-service-recover
+name: 综合排障：Web 服务恢复
+topic: nginx
+difficulty: 3
+sortOrder: 97
+tags: [综合]
+timeLimitMinutes: 45
+scenario: |
+  站点 http://127.0.0.1:8085 挂了（曾经正常）。目录 /var/www/it 与配置 /etc/nginx/sites-available/it 都在。
+  任务：找出原因（nginx 没起）恢复服务，curl 8085 返回 IT_OK。
+setup: |
+  mkdir -p /var/www/it; echo "IT_OK" > /var/www/it/index.html
+  cat > /etc/nginx/sites-available/it <<EOF
+  server { listen 8085; root /var/www/it; index index.html; }
+  EOF
+  ln -sf /etc/nginx/sites-available/it /etc/nginx/sites-enabled/it
+  pkill -x nginx 2>/dev/null; echo ok
+check: |
+  out=$(curl -s --max-time 3 http://127.0.0.1:8085/ 2>/dev/null)
+  if echo "$out" | grep -q IT_OK; then
+    echo '{"pass":true,"score":100,"message":"完成！服务恢复"}'
+  else
+    echo '{"pass":false,"score":0,"message":"查端口监听→发现nginx未运行→启动→验证"}'
+  fi
+hints:
+  - ss -tlnp | grep 8085：没人听
+  - pgrep nginx：进程不在
+  - nginx -t && nginx 启动
+solution: |
+  ss -tlnp | grep 8085 || echo "8085 无监听"
+  pgrep -x nginx || echo "nginx 未运行"
+  nginx -t && nginx
+  curl -s http://127.0.0.1:8085/

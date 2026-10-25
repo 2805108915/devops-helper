@@ -1,0 +1,31 @@
+code: nginx-log-cut
+name: 手工日志轮转信号
+topic: nginx
+difficulty: 2
+sortOrder: 63
+tags: [日志]
+timeLimitMinutes: 30
+scenario: |
+  按天切割 access.log：把当前日志 mv 成 access.20261025.log，再让 nginx 重开句柄（不重启服务）。
+  任务：完成后 /var/log/nginx/ 存在 access.20261025.log 且 access.log 重新可写（判分：两个文件都存在且新请求追加进 access.log）。
+setup: |
+  nginx 2>/dev/null || true
+  echo "init" > /var/log/nginx/access.log
+check: |
+  sleep 1
+  curl -s -o /dev/null --max-time 3 http://127.0.0.1/ 2>/dev/null
+  if [ -f /var/log/nginx/access.20261025.log ] && [ -f /var/log/nginx/access.log ] && [ "$(wc -l < /var/log/nginx/access.log)" -ge 1 ]; then
+    echo '{"pass":true,"score":100,"message":"完成！切割与重开句柄成功"}'
+  else
+    echo '{"pass":false,"score":0,"message":"mv 后给 master 发 USR1 信号"}'
+  fi
+hints:
+  - mv access.log access.20261025.log
+  - nginx -s reopen（等价 kill -USR1 master pid）
+  - curl 一次验证新文件在写
+solution: |
+  cd /var/log/nginx
+  mv access.log access.20261025.log
+  nginx -s reopen
+  curl -s -o /dev/null http://127.0.0.1/
+  ls -la /var/log/nginx | head

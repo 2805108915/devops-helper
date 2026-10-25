@@ -1,0 +1,31 @@
+code: disk-log-rotate-manual
+name: 手工日志轮转（truncate）
+topic: linux
+difficulty: 2
+sortOrder: 37
+tags: [日志]
+timeLimitMinutes: 30
+scenario: |
+  /var/log/app/server.log 8GB，进程持有句柄不能停。
+  任务：不重启进程的前提下把日志清空（保留文件与句柄），使文件大小 < 1MB；并将内容归档到 /backup/server.log.old（先拷贝再清空）。
+setup: |
+  mkdir -p /var/log/app /backup
+  setsid sh -c 'exec 3>/var/log/app/server.log; while :; do echo "line" >&3; sleep 1; done' >/dev/null 2>&1 < /dev/null &
+  dd if=/dev/zero of=/var/log/app/server.log bs=1M count=8 status=none
+check: |
+  sz=$(du -sm /var/log/app/server.log | awk '{print $1}')
+  b=$(du -sm /backup/server.log.old 2>/dev/null | awk '{print $1}')
+  if [ "$sz" -lt 1 ] && [ "$b" -ge 7 ]; then
+    echo '{"pass":true,"score":100,"message":"完成！句柄保留且已归档"}'
+  else
+    echo '{"pass":false,"score":0,"message":"日志 '$sz'MB、归档 '$b'MB（cp 后用 > file 截断，不能 rm）"}'
+  fi
+hints:
+  - 先归档：cp server.log /backup/server.log.old
+  - 清空但保句柄：> /var/log/app/server.log
+  - rm 会导致空间不释放——为什么？
+solution: |
+  cp /var/log/app/server.log /backup/server.log.old
+  > /var/log/app/server.log
+  ls -lh /var/log/app/server.log /backup/server.log.old
+  lsof /var/log/app/server.log | head -3

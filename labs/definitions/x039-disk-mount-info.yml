@@ -1,0 +1,26 @@
+code: disk-mount-info
+name: 分区与挂载信息审计
+topic: linux
+difficulty: 1
+sortOrder: 39
+tags: [df, mount]
+timeLimitMinutes: 20
+scenario: |
+  写巡检报告需要分区信息。
+  任务：把当前系统所有文件系统的"挂载点 使用率%"按 df 输出写入 /root/fs-report.txt（至少包含 / 一行）。
+setup: |
+  echo ok
+check: |
+  if [ -f /root/fs-report.txt ] && grep -qE "^/\s|/" /root/fs-report.txt && [ "$(wc -l < /root/fs-report.txt)" -ge 1 ]; then
+    echo '{"pass":true,"score":100,"message":"完成！分区报告生成"}'
+  else
+    echo '{"pass":false,"score":0,"message":"df -h > /root/fs-report.txt"}'
+  fi
+hints:
+  - df -h
+  - 含挂载点与百分比
+  - 写入报告
+solution: |
+  df -h
+  df -h > /root/fs-report.txt
+  cat /root/fs-report.txt

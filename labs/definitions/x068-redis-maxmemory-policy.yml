@@ -1,0 +1,38 @@
+code: redis-maxmemory-policy
+name: 配置内存淘汰策略
+topic: mw
+difficulty: 2
+sortOrder: 68
+tags: [redis]
+timeLimitMinutes: 40
+scenario: |
+  Redis 当缓存用，内存满了会写报错。
+  任务：启动 redis（配置已给 maxmemory 64mb），设置淘汰策略为 allkeys-lru（CONFIG SET），并把 CONFIG GET maxmemory-policy 的结果写入 /root/policy.txt。
+setup: |
+  pkill -x redis-server 2>/dev/null; sleep 1
+  cat > /etc/redis/redis.conf <<EOF
+  bind 127.0.0.1
+  port 6379
+  daemonize yes
+  maxmemory 64mb
+  maxmemory-policy noeviction
+  logfile /var/log/redis/redis.log
+  dir /var/lib/redis
+  EOF
+  mkdir -p /var/log/redis /var/lib/redis
+check: |
+  p=$(grep -c allkeys-lru /root/policy.txt 2>/dev/null || echo 0)
+  if [ "$p" -ge 1 ]; then
+    echo '{"pass":true,"score":100,"message":"完成！LRU 淘汰已生效"}'
+  else
+    echo '{"pass":false,"score":0,"message":"CONFIG SET maxmemory-policy allkeys-lru 后 GET 结果落盘"}'
+  fi
+hints:
+  - 启动：redis-server /etc/redis/redis.conf
+  - CONFIG SET maxmemory-policy allkeys-lru
+  - CONFIG GET maxmemory-policy > /root/policy.txt
+solution: |
+  redis-server /etc/redis/redis.conf
+  sleep 1
+  redis-cli CONFIG SET maxmemory-policy allkeys-lru
+  redis-cli CONFIG GET maxmemory-policy | tee /root/policy.txt

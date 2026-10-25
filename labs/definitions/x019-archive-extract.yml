@@ -1,0 +1,30 @@
+code: archive-extract
+name: 备份归档与校验
+topic: linux
+difficulty: 1
+sortOrder: 19
+tags: [tar]
+timeLimitMinutes: 30
+scenario: |
+  需要打包 /data/app 发布到备份机。
+  任务：把 /data/app 打包为 /backup/app-2026.tar.gz，并解压到 /restore/app 验证内容一致。
+setup: |
+  mkdir -p /data/app/conf /backup
+  echo "name=demo" > /data/app/conf/app.conf
+  echo "v1" > /data/app/version
+  echo "log line" > /data/app/run.log
+check: |
+  if [ -f /backup/app-2026.tar.gz ] && [ -f /restore/app/conf/app.conf ] && [ "$(cat /restore/app/version 2>/dev/null)" = "v1" ]; then
+    echo '{"pass":true,"score":100,"message":"完成！归档与恢复校验通过"}'
+  else
+    echo '{"pass":false,"score":0,"message":"检查 tar -czf 打包与 -xzf 解压路径"}'
+  fi
+hints:
+  - 打包：tar -czf /backup/app-2026.tar.gz -C /data app
+  - 解压：mkdir -p /restore/app && tar -xzf ... -C /restore/app
+  - 校验 diff -r /data/app /restore/app
+solution: |
+  tar -czf /backup/app-2026.tar.gz -C /data app
+  mkdir -p /restore/app
+  tar -xzf /backup/app-2026.tar.gz -C /restore/app
+  diff -r /data/app /restore/app && echo SAME

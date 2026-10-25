@@ -1,0 +1,29 @@
+code: perm-umask
+name: 修复默认权限（umask）
+topic: linux
+difficulty: 2
+sortOrder: 26
+tags: [umask]
+timeLimitMinutes: 30
+scenario: |
+  某用户 umask 被设成 077，新文件对同组完全不可读，导致协作故障。
+  任务：使当前 shell 的 umask 为 022，并创建 /data/public/readme.txt 验证其权限为 644。
+setup: |
+  mkdir -p /data/public
+  # 无需预埋，任务在用户操作
+check: |
+  p=$(stat -c %a /data/public/readme.txt 2>/dev/null)
+  if [ "$p" = "644" ]; then
+    echo '{"pass":true,"score":100,"message":"完成！默认权限恢复 644"}'
+  else
+    echo '{"pass":false,"score":0,"message":"readme.txt 当前权限 '$p'（要求 644）"}'
+  fi
+hints:
+  - 查看：umask
+  - 设置：umask 022
+  - 新建文件验证：stat -c %a
+solution: |
+  umask
+  umask 022
+  echo hi > /data/public/readme.txt
+  stat -c %a /data/public/readme.txt

@@ -1,0 +1,31 @@
+code: locate-empty-dirs
+name: 清理空目录
+topic: linux
+difficulty: 1
+sortOrder: 14
+tags: [find]
+timeLimitMinutes: 30
+scenario: |
+  /data/share 下有大量空目录占 inode。
+  任务：删除 /data/share 下所有空目录（含嵌套），保留非空目录。
+setup: |
+  mkdir -p /data/share/x1 /data/share/x2/y2 /data/share/x3
+  echo f > /data/share/x3/file.txt
+  mkdir -p /data/share/x4/z1
+check: |
+  e=$(find /data/share -type d -empty | wc -l)
+  f=$(find /data/share -type f | wc -l)
+  if [ "$e" -eq 0 ] && [ "$f" -ge 1 ]; then
+    echo '{"pass":true,"score":100,"message":"完成！空目录已清理"}'
+  else
+    echo '{"pass":false,"score":0,"message":"还有 '$e' 个空目录"}'
+  fi
+hints:
+  - 空目录：find -type d -empty
+  - 删除：-delete
+  - 注意嵌套空目录可能要跑两遍
+solution: |
+  find /data/share -type d -empty -print
+  find /data/share -type d -empty -delete
+  find /data/share -type d -empty -delete   # 嵌套的第二遍
+  find /data/share -type d

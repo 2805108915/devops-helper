@@ -1,0 +1,35 @@
+code: nginx-https-selfsigned
+name: 自签 HTTPS 上线
+topic: nginx
+difficulty: 3
+sortOrder: 61
+tags: [HTTPS, openssl]
+timeLimitMinutes: 45
+scenario: |
+  测试环境需要 HTTPS：用 openssl 生成自签证书并配置 nginx 443，使 curl -k https://127.0.0.1/ 返回 200。
+setup: |
+  nginx 2>/dev/null || true
+check: |
+  code=$(curl -sk -o /dev/null -w "%{http_code}" --max-time 3 https://127.0.0.1/ 2>/dev/null)
+  if [ "$code" = "200" ]; then
+    echo '{"pass":true,"score":100,"message":"完成！HTTPS 服务上线"}'
+  else
+    echo '{"pass":false,"score":0,"message":"生成证书+443 ssl 配置+reload（curl -k 自签）"}'
+  fi
+hints:
+  - 生成：openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout /etc/nginx/ssl.key -out /etc/nginx/ssl.crt -subj "/CN=test"
+  - server { listen 443 ssl; ssl_certificate ...; ssl_certificate_key ...; root html; }
+  - reload 后 curl -k 验证
+solution: |
+  openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout /etc/nginx/ssl.key -out /etc/nginx/ssl.crt -subj "/CN=test" >/dev/null 2>&1
+  cat > /etc/nginx/sites-available/ssl <<EOF
+  server {
+      listen 443 ssl;
+      ssl_certificate /etc/nginx/ssl.crt;
+      ssl_certificate_key /etc/nginx/ssl.key;
+      root /var/www/html;
+  }
+  EOF
+  ln -sf /etc/nginx/sites-available/ssl /etc/nginx/sites-enabled/ssl
+  nginx -t && nginx -s reload
+  curl -sk -o /dev/null -w "%{http_code}\n" https://127.0.0.1/

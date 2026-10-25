@@ -1,0 +1,31 @@
+code: nginx-rewrite-rule
+name: 旧路径重定向
+topic: nginx
+difficulty: 2
+sortOrder: 65
+tags: [rewrite]
+timeLimitMinutes: 30
+scenario: |
+  站点改版：/old/* 需 301 到 /new/*。
+  任务：配置后 curl -I http://127.0.0.1/old/page 应返回 301 且 Location 含 /new/page。
+setup: |
+  mkdir -p /var/www/html/new; echo NEW > /var/www/html/new/page
+  nginx 2>/dev/null || true
+check: |
+  loc=$(curl -s -o /dev/null -D - --max-time 3 http://127.0.0.1/old/page 2>/dev/null | grep -i "^location" | grep -c "/new/page")
+  code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 3 http://127.0.0.1/old/page 2>/dev/null)
+  if [ "$loc" -ge 1 ] && [ "$code" = "301" ]; then
+    echo '{"pass":true,"score":100,"message":"完成！旧路径迁移完成"}'
+  else
+    echo '{"pass":false,"score":0,"message":"location /old/ { rewrite ^/old/(.*)$ /new/$1 permanent; }"}'
+  fi
+hints:
+  - location /old/ { rewrite ^/old/(.*)$ /new/$1 permanent; }
+  - permanent = 301（redirect=302）
+  - reload 后 curl -I 验证
+solution: |
+  # 在默认 server 配置中加入 location
+  vi /etc/nginx/sites-available/default 2>/dev/null || vi /etc/nginx/nginx.conf
+  # location /old/ { rewrite ^/old/(.*)$ /new/$1 permanent; }
+  nginx -t && nginx -s reload
+  curl -I http://127.0.0.1/old/page

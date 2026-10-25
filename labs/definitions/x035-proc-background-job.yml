@@ -1,0 +1,37 @@
+code: proc-background-job
+name: 后台任务与脱离会话
+topic: linux
+difficulty: 2
+sortOrder: 35
+tags: [nohup]
+timeLimitMinutes: 30
+scenario: |
+  需要一个长期任务在后台持续输出心跳。
+  任务：以后台方式启动 /opt/task/beat.sh（脱离终端），并确保进程存活（判分时检查进程与日志文件持续增长）。
+setup: |
+  mkdir -p /opt/task
+  cat > /opt/task/beat.sh <<EOF
+  #!/bin/bash
+  while :; do
+    echo "beat $(date +%T)" >> /var/log/beat.log
+    sleep 1
+  done
+  EOF
+  chmod +x /opt/task/beat.sh
+check: |
+  sleep 3
+  p=$(pgrep -f beat.sh | head -1)
+  l=$(wc -l < /var/log/beat.log 2>/dev/null || echo 0)
+  if [ -n "$p" ] && [ "$l" -ge 3 ]; then
+    echo '{"pass":true,"score":100,"message":"完成！心跳任务后台存活"}'
+  else
+    echo '{"pass":false,"score":0,"message":"nohup /opt/task/beat.sh & 方式启动"}'
+  fi
+hints:
+  - 直接运行会占终端且退出即死
+  - nohup /opt/task/beat.sh >/dev/null 2>&1 &
+  - 验证：pgrep -f beat.sh；tail /var/log/beat.log
+solution: |
+  nohup /opt/task/beat.sh >/dev/null 2>&1 &
+  pgrep -f beat.sh
+  tail -3 /var/log/beat.log

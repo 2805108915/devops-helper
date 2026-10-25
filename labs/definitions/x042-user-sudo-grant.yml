@@ -1,0 +1,28 @@
+code: user-sudo-grant
+name: 受限 sudo 授权
+topic: linux
+difficulty: 3
+sortOrder: 42
+tags: [sudo]
+timeLimitMinutes: 40
+scenario: |
+  运维组新人 ops1 需要能免密重启 nginx，但不能做别的 root 操作。
+  任务：给 ops1 配置仅允许免密执行 systemctl restart nginx 的 sudo 规则（写入 /etc/sudoers.d/ops1，权限 440）。
+setup: |
+  id -u ops1 >/dev/null 2>&1 || useradd -m -s /bin/bash ops1
+  rm -f /etc/sudoers.d/ops1
+check: |
+  if [ -f /etc/sudoers.d/ops1 ] && [ "$(stat -c %a /etc/sudoers.d/ops1)" = "440" ] && grep -q "systemctl restart nginx" /etc/sudoers.d/ops1 && grep -q "NOPASSWD" /etc/sudoers.d/ops1; then
+    echo '{"pass":true,"score":100,"message":"完成！最小授权配置正确"}'
+  else
+    echo '{"pass":false,"score":0,"message":"/etc/sudoers.d/ops1 需 440 且含 NOPASSWD: systemctl restart nginx"}'
+  fi
+hints:
+  - 格式：ops1 ALL=(root) NOPASSWD: /usr/bin/systemctl restart nginx（容器无systemd也按路径写）
+  - 权限必须 440
+  - 语法校验：visudo -c
+solution: |
+  echo 'ops1 ALL=(root) NOPASSWD: /usr/bin/systemctl restart nginx' > /etc/sudoers.d/ops1
+  chmod 440 /etc/sudoers.d/ops1
+  visudo -c
+  su ops1 -c 'sudo -l'

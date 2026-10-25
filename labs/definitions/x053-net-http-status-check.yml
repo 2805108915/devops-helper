@@ -1,0 +1,33 @@
+code: net-http-status-check
+name: 批量 URL 探活
+topic: shell
+difficulty: 2
+sortOrder: 53
+tags: [脚本, curl]
+timeLimitMinutes: 40
+scenario: |
+  写一个探活脚本：读取 /opt/urls.txt（每行一个URL），逐个 curl 取状态码，输出 "状态码 URL" 到 /root/probe.txt。
+setup: |
+  mkdir -p /var/www/html; echo ok > /var/www/html/index.html; nginx 2>/dev/null || true
+  cat > /opt/urls.txt <<EOF
+  http://127.0.0.1/
+  http://127.0.0.1/none
+  http://127.0.0.1/ok2
+  EOF
+check: |
+  if [ -f /root/probe.txt ] && grep -q "^200.*127.0.0.1/" /root/probe.txt && [ "$(wc -l < /root/probe.txt)" -ge 3 ]; then
+    echo '{"pass":true,"score":100,"message":"完成！批量探活报告"}'
+  else
+    echo '{"pass":false,"score":0,"message":"while read 循环 + curl -o /dev/null -w"}'
+  fi
+hints:
+  - while read -r url; do ...; done < /opt/urls.txt
+  - 取码：curl -s -o /dev/null -w "%{http_code}" "$url"
+  - echo "$code $url" >> /root/probe.txt
+solution: |
+  #!/bin/bash
+  while read -r url; do
+    code=$(curl -s -o /dev/null -m 3 -w "%{http_code}" "$url")
+    echo "$code $url" >> /root/probe.txt
+  done < /opt/urls.txt
+  cat /root/probe.txt

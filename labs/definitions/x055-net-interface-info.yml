@@ -1,0 +1,25 @@
+code: net-interface-info
+name: 网卡信息采集
+topic: network
+difficulty: 1
+sortOrder: 55
+tags: [ip]
+timeLimitMinutes: 20
+scenario: |
+  资产登记需要网卡信息。
+  任务：列出所有网卡名与对应 IPv4 地址（"网卡 IP"每行）写入 /root/nics.txt，至少包含 eth0。
+setup: |
+  echo ok
+check: |
+  if [ -f /root/nics.txt ] && grep -q "eth0" /root/nics.txt && grep -qE "[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+" /root/nics.txt; then
+    echo '{"pass":true,"score":100,"message":"完成！网卡清单生成"}'
+  else
+    echo '{"pass":false,"score":0,"message":"ip -4 -o addr 可拿 网卡+IP"}'
+  fi
+hints:
+  - ip -4 -o addr show
+  - 第二列网卡第四列IP
+  - awk 处理成"网卡 IP"
+solution: |
+  ip -4 -o addr | awk '{print $2, $4}' | cut -d/ -f1 > /root/nics.txt
+  cat /root/nics.txt

@@ -1,0 +1,37 @@
+code: proc-zombie-parent
+name: 僵尸进程清理
+topic: linux
+difficulty: 2
+sortOrder: 29
+tags: [僵尸]
+timeLimitMinutes: 30
+scenario: |
+  系统出现多个 Z 状态进程，PID 资源被占。
+  任务：找出僵尸进程及其父进程，终止父进程让僵尸被回收（系统 Z 状态进程数 = 0）。
+setup: |
+  printf "#!/bin/bash\n/bin/sleep 300 &\nsleep 1\nkill -9 %s\nwait\n" "$!" > /tmp/badparent.sh 2>/dev/null || true
+  cat > /tmp/badparent.sh <<EOF
+  #!/bin/bash
+  /bin/sleep 300 &
+  sleep 1
+  kill -9 $!
+  while :; do sleep 10; done
+  EOF
+  chmod +x /tmp/badparent.sh
+  setsid /tmp/badparent.sh >/dev/null 2>&1 < /dev/null &
+  sleep 3
+check: |
+  z=$(ps aux | awk '$8 ~ /^Z/' | wc -l)
+  if [ "$z" -eq 0 ]; then
+    echo '{"pass":true,"score":100,"message":"完成！僵尸已回收"}'
+  else
+    echo '{"pass":false,"score":0,"message":"还有 '$z' 个僵尸——杀它们的父进程"}'
+  fi
+hints:
+  - 找僵尸：ps aux | awk '$8 ~ /^Z/'
+  - 看父进程：ps -o ppid= -p <zpid>
+  - 杀父进程僵尸即被 init 回收
+solution: |
+  ps aux | awk '$8 ~ /^Z/ {print $2}' | head -1 | xargs -I{} ps -o pid,ppid,cmd -p {}
+  pkill -9 -f badparent.sh
+  ps aux | awk '$8 ~ /^Z/' | wc -l

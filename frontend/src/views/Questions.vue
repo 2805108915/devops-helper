@@ -35,7 +35,7 @@
 
     <el-card class="page-card">
       <div v-if="list.length === 0 && !loading" class="empty">暂无题目，换个条件试试</div>
-      <div v-for="q in list" :key="q.id" class="q-item" @click="openDetail(q.id)">
+      <div v-for="q in list" :key="q.id" class="q-item" @click="enterStudy(q.id)">
         <div class="q-main">
           <el-tag size="small" :type="typeTag(q.type)">{{ typeText(q.type) }}</el-tag>
           <el-tag size="small" type="info">{{ store.topicName(q.topicId) }}</el-tag>
@@ -190,9 +190,20 @@ async function load(page = query.page) {
     const data = await api.questions({ ...query, wrongOnly: wrongOnly.value || undefined })
     list.value = data.records
     total.value = data.total
+    // 保存刷题上下文：当前筛选下全部题目 id（供刷题页上一题/下一题）
+    if (query.order !== 'random' && !wrongOnly.value) {
+      const all = await api.questions({ ...query, page: 1, size: 2000 })
+      store.questionIds = all.records.map(r => r.id)
+    }
   } finally {
     loading.value = false
   }
+}
+
+/** 点击进入刷题页 */
+function enterStudy(id) {
+  if (query.order === 'random' || wrongOnly.value) store.questionIds = list.value.map(r => r.id)
+  router.push(`/study/${id}`)
 }
 
 async function openDetail(id) {

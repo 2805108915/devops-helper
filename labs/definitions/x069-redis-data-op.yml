@@ -1,0 +1,36 @@
+code: redis-data-op
+name: Redis 数据操作实战
+topic: mw
+difficulty: 1
+sortOrder: 69
+tags: [redis]
+timeLimitMinutes: 30
+scenario: |
+  熟悉数据结构：向本地 Redis 写入 key name=ops-2026（string）、向 set tags 加入 a 和 b，把 LLEN/LRANGE 之外的两个 key 数量（DBSIZE）写入 /root/dbsize.txt。
+setup: |
+  pkill -x redis-server 2>/dev/null; sleep 1
+  cat > /etc/redis/redis.conf <<EOF
+  bind 127.0.0.1
+  port 6379
+  daemonize yes
+  logfile /var/log/redis/redis.log
+  dir /var/lib/redis
+  EOF
+  mkdir -p /var/log/redis /var/lib/redis
+check: |
+  n=$(redis-cli dbsize 2>/dev/null)
+  f=$(grep -oE "^2$" /root/dbsize.txt 2>/dev/null | head -1)
+  if [ "$n" -ge 2 ] && [ "$f" = "2" ]; then
+    echo '{"pass":true,"score":100,"message":"完成！数据操作到位"}'
+  else
+    echo '{"pass":false,"score":0,"message":"SET name ops-2026；SADD tags a b；DBSIZE 写入文件"}'
+  fi
+hints:
+  - 启动 redis
+  - SET name ops-2026；SADD tags a b
+  - redis-cli dbsize > /root/dbsize.txt
+solution: |
+  redis-server /etc/redis/redis.conf; sleep 1
+  redis-cli SET name ops-2026
+  redis-cli SADD tags a b
+  redis-cli dbsize | tee /root/dbsize.txt

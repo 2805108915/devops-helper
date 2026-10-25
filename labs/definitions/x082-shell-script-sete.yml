@@ -1,0 +1,32 @@
+code: shell-script-sete
+name: 给脚本加健壮性
+topic: shell
+difficulty: 2
+sortOrder: 82
+tags: [健壮性]
+timeLimitMinutes: 30
+scenario: |
+  /opt/deploy.sh 某步失败仍继续执行（危险）。
+  任务：给脚本加 set -euo pipefail（放在 shebang 后），使它第一步就安全退出；验证脚本退出码非 0。
+setup: |
+  cat > /opt/deploy.sh <<EOF
+  #!/bin/bash
+  cd /not-exist-dir 2>/dev/null
+  echo "still running" >> /tmp/deploy.log
+  EOF
+  chmod +x /opt/deploy.sh
+check: |
+  /opt/deploy.sh >/dev/null 2>&1; rc=$?
+  if [ "$rc" -ne 0 ] && [ ! -f /tmp/deploy.log ]; then
+    echo '{"pass":true,"score":100,"message":"完成！失败即停生效"}'
+  else
+    echo '{"pass":false,"score":0,"message":"加 set -euo pipefail；注意 cd 失败会退出且后续不执行"}'
+  fi
+hints:
+  - 第2行加 set -euo pipefail
+  - cd 失败（无-e时被 2>/dev/null 吞掉继续跑）
+  - 运行后看退出码 $?
+solution: |
+  sed -i "1a set -euo pipefail" /opt/deploy.sh
+  /opt/deploy.sh; echo "exit=$?"
+  ls /tmp/deploy.log 2>/dev/null || echo "未执行后续步骤=正确"

@@ -1,0 +1,31 @@
+code: net-two-ports-conflict
+name: 双服务端口冲突
+topic: network
+difficulty: 2
+sortOrder: 51
+tags: [端口]
+timeLimitMinutes: 30
+scenario: |
+  新服务起不来：8082 被一个废弃的 python 服务占着，而正确的新服务应为 python 监听 8082 且目录在 /opt/newweb。
+  任务：杀掉旧服务，以 nohup 启动新服务（python3 -m http.server 8082 --directory /opt/newweb --bind 0.0.0.0），curl 返回 NEW_OK。
+setup: |
+  mkdir -p /opt/newweb
+  echo "NEW_OK" > /opt/newweb/index.html
+  setsid python3 -m http.server 8082 --directory /tmp --bind 0.0.0.0 >/dev/null 2>&1 < /dev/null &
+  sleep 1
+check: |
+  out=$(curl -s --max-time 3 http://127.0.0.1:8082/ 2>/dev/null)
+  if echo "$out" | grep -q NEW_OK; then
+    echo '{"pass":true,"score":100,"message":"完成！新服务接管端口"}'
+  else
+    echo '{"pass":false,"score":0,"message":"先杀旧进程，再以正确目录后台启动"}'
+  fi
+hints:
+  - 找占用：ss -tlnp | grep 8082
+  - 杀掉后确认端口空闲
+  - nohup python3 -m http.server 8082 --directory /opt/newweb --bind 0.0.0.0 &
+solution: |
+  ss -tlnp | grep 8082
+  kill $(ss -tlnp | grep :8082 | grep -oP "pid=\K[0-9]+" | head -1); sleep 1
+  nohup python3 -m http.server 8082 --directory /opt/newweb --bind 0.0.0.0 >/dev/null 2>&1 &
+  sleep 1; curl -s http://127.0.0.1:8082/

@@ -1,0 +1,30 @@
+code: grep-deep-search
+name: 全目录内容搜索
+topic: linux
+difficulty: 1
+sortOrder: 18
+tags: [grep]
+timeLimitMinutes: 30
+scenario: |
+  要在 /opt/app 的所有文件里找到含数据库密码的配置。
+  任务：找出 /opt/app 下内容含 "DB_PASSWORD" 的文件，把文件路径写入 /root/found.txt。
+setup: |
+  mkdir -p /opt/app/conf /opt/app/src
+  echo "DB_PASSWORD=s3cret" > /opt/app/conf/app.properties
+  echo "port=8080" > /opt/app/conf/net.properties
+  echo "spring.datasource... DB_PASSWORD=abc123" > /opt/app/src/main.conf
+  echo "hello" > /opt/app/src/readme
+check: |
+  if [ -f /root/found.txt ] && [ "$(grep -c app.properties /root/found.txt)" -ge 1 ] && [ "$(grep -c main.conf /root/found.txt)" -ge 1 ] && [ "$(grep -c net.properties /root/found.txt)" -eq 0 ]; then
+    echo '{"pass":true,"score":100,"message":"完成！精准命中两个文件"}'
+  else
+    echo '{"pass":false,"score":0,"message":"检查 grep -rl 的输出与重定向"}'
+  fi
+hints:
+  - 递归搜内容：grep -r "DB_PASSWORD" /opt/app
+  - -l 只列文件名
+  - 重定向 > /root/found.txt
+solution: |
+  grep -rl "DB_PASSWORD" /opt/app
+  grep -rl "DB_PASSWORD" /opt/app > /root/found.txt
+  cat /root/found.txt

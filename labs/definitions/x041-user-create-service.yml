@@ -1,0 +1,26 @@
+code: user-create-service
+name: 创建服务账号（最小权限）
+topic: linux
+difficulty: 1
+sortOrder: 41
+tags: [useradd]
+timeLimitMinutes: 20
+scenario: |
+  要部署新服务，按规范建专用账号。
+  任务：创建系统账号 deploy（不可登录 shell /sbin/nologin，无家目录或默认均可），并验证 id deploy 存在。
+setup: |
+  id -u deploy >/dev/null 2>&1 && userdel -r deploy 2>/dev/null; echo ok
+check: |
+  if id deploy >/dev/null 2>&1 && [ "$(getent passwd deploy | cut -d: -f7)" = "/sbin/nologin" ]; then
+    echo '{"pass":true,"score":100,"message":"完成！最小权限账号就绪"}'
+  else
+    echo '{"pass":false,"score":0,"message":"useradd -r -s /sbin/nologin deploy"}'
+  fi
+hints:
+  - 系统账号：useradd -r
+  - 禁止登录：-s /sbin/nologin
+  - 验证：id deploy; getent passwd deploy
+solution: |
+  useradd -r -s /sbin/nologin deploy
+  id deploy
+  getent passwd deploy

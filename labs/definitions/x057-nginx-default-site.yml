@@ -1,0 +1,37 @@
+code: nginx-default-site
+name: 默认站点抢占
+topic: nginx
+difficulty: 2
+sortOrder: 57
+tags: [server_name]
+timeLimitMinutes: 30
+scenario: |
+  配置了新站点 shop (listen 80, server_name shop.test)，但访问一直返回默认欢迎页。
+  任务：让 shop.test 的请求返回 SHOP_OK（本机 hosts 已把 shop.test 指到 127.0.0.1；配置文件在 /etc/nginx/sites-available/shop）。
+setup: |
+  mkdir -p /var/www/shop; echo "SHOP_OK" > /var/www/shop/index.html
+  cat > /etc/nginx/sites-available/shop <<EOF
+  server {
+      listen 80;
+      root /var/www/shop;
+      index index.html;
+  }
+  EOF
+  echo "127.0.0.1 shop.test" >> /etc/hosts
+  nginx 2>/dev/null || true
+check: |
+  out=$(curl -s --max-time 3 -H "Host: shop.test" http://127.0.0.1/ 2>/dev/null)
+  if echo "$out" | grep -q SHOP_OK; then
+    echo '{"pass":true,"score":100,"message":"完成！虚拟主机生效"}'
+  else
+    echo '{"pass":false,"score":0,"message":"配置 server_name shop.test 并 reload（软链确认在 sites-enabled）"}'
+  fi
+hints:
+  - 问题：没写 server_name，请求落在 default server
+  - 加 server_name shop.test; 并启用站点软链
+  - nginx -t && nginx -s reload
+solution: |
+  sed -i 's/listen 80;/listen 80;\n    server_name shop.test;/' /etc/nginx/sites-available/shop
+  ln -sf /etc/nginx/sites-available/shop /etc/nginx/sites-enabled/shop
+  nginx -t && nginx -s reload
+  curl -s -H 'Host: shop.test' http://127.0.0.1/

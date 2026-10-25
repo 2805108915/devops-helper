@@ -1,0 +1,38 @@
+code: shell-file-watch
+name: 文件变更监控（简单版）
+topic: shell
+difficulty: 3
+sortOrder: 98
+tags: [进阶]
+timeLimitMinutes: 40
+scenario: |
+  监控 /opt/conf/app.conf 是否被改动（轮询 md5）。
+  任务：写 /opt/watch-conf.sh：后台死循环每 5 秒比较 md5，变化时追加一行到 /tmp/conf.alert 并更新基准；启动它后台运行（判分：修改 app.conf 后 30 秒内 /tmp/conf.alert 出现记录）。
+setup: |
+  mkdir -p /opt/conf; echo "a=1" > /opt/conf/app.conf
+check: |
+  md5sum /opt/conf/app.conf | awk '{print $1}' > /tmp/base.md5
+  echo "a=2" > /opt/conf/app.conf
+  sleep 25
+  if [ -f /tmp/conf.alert ] && grep -q "changed" /tmp/conf.alert; then
+    echo '{"pass":true,"score":100,"message":"完成！变更被捕获"}'
+  else
+    echo '{"pass":false,"score":0,"message":"守护脚本需在后台持续运行并检测差异"}'
+  fi
+hints:
+  - md5sum 取哈希与基准比较
+  - 变化则 echo "$(date) changed" >> /tmp/conf.alert 并更新基准
+  - nohup 后台运行
+solution: |
+  cat > /opt/watch-conf.sh <<EOF
+  #!/bin/bash
+  base=\$(md5sum /opt/conf/app.conf | awk "{print \$1}")
+  while :; do
+    cur=\$(md5sum /opt/conf/app.conf | awk "{print \$1}")
+    [ "\$cur" != "\$base" ] && { echo "\$(date +%T) changed" >> /tmp/conf.alert; base=\$cur; }
+    sleep 5
+  done
+  EOF
+  chmod +x /opt/watch-conf.sh
+  nohup /opt/watch-conf.sh >/dev/null 2>&1 &
+  pgrep -f watch-conf

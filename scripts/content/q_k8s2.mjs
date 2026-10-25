@@ -1,0 +1,21 @@
+// K8s 补充题
+export const Q = [
+  { t: 'C', d: 1, q: 'kubectl apply 与 create 的区别？', o: ['A. apply 声明式可反复执行；create 一次性的', 'B. 相同', 'C. create更强', 'D. apply删旧建新'], a: 'A。apply 记录 last-applied 配置支持 diff/回退；GitOps 全用 apply。', g: ['基础'] },
+  { t: 'C', d: 1, q: 'Deployment 的 selector 的作用？', o: ['A. 匹配要管理的 Pod 标签', 'B. 选节点', 'C. 选Service', 'D. 选namespace'], a: 'A。selector 与 Pod labels 不匹配=管不到（部署成功但副本0排障点）。', g: ['基础'] },
+  { t: 'C', d: 2, q: 'kubectl exec 临时容器与普通 exec 的场景差异？', o: ['A. 容器无 shell/工具时用 ephemeral container（kubectl debug）', 'B. 相同', 'C. 前者更快', 'D. 后者更安全'], a: 'A。distroless 镜像排障标配：kubectl debug -it pod --image=busybox --target=x。', g: ['排障', '进阶'] },
+  { t: 'C', d: 2, q: 'PodDisruptionBudget 保护什么？', o: ['A. 主动运维（drain/升级）期间的至少可用副本', 'B. 宕机', 'C. 网络', 'D. 配额'], a: 'A。minAvailable: 2 让自愿驱逐遵循可用性；节点故障（非自愿）它不管。', g: ['高可用'] },
+  { t: 'C', d: 2, q: 'terminationGracePeriodSeconds 默认值与作用？', o: ['A. 30秒；TERM后到KILL的宽限期', 'B. 10秒', 'C. 5分钟', 'D. 无限'], a: 'A。长任务/优雅停机不足时调大；配合 preStop sleep 让 LB 先摘流量。', g: ['发布'] },
+  { t: 'C', d: 2, q: 'nodeSelector 与 affinity 的差别？', o: ['A. 前者简单匹配；后者支持偏好/反亲和/软约束', 'B. 相同', 'C. 后者废弃', 'D. 前者更灵活'], a: 'A。生产常用 podAntiAffinity 把同服务副本打散到不同节点。', g: ['调度'] },
+  { t: 'C', d: 2, q: 'taint/toleration 与 affinity 的分工？', o: ['A. taint 驱赶（节点拒绝）；toleration 容忍；affinity 吸引（Pod挑选）', 'B. 都一样', 'C. 反的', 'D. 无关联'], a: 'A。专用节点：打 taint + 目标负载 toleration。', g: ['调度', '进阶'] },
+  { t: 'C', d: 2, q: 'kube-scheduler 调度失败最常见三类原因？', o: ['A. 资源不足/亲和冲突/PVC未绑定', 'B. 网络断', 'C. 镜像拉不下', 'D. API超时'], a: 'A。describe 的 Events 会写 Insufficient xxx。', g: ['排障'] },
+  { t: 'C', d: 2, q: 'Endpoints 与 EndpointSlice 的关系？', o: ['A. EndpointSlice 是 Endpoints 的扩展替代（大规模性能）', 'B. 无关', 'C. 前者新', 'D. 同一对象两个名'], a: 'A。Service 后端实际指向；排 "Service 不通" 先看 endpoints 是否为空（selector/labels 不匹配）。', g: ['网络', '排障'] },
+  { t: 'C', d: 2, q: 'Service externalTrafficPolicy: Local 的意义？', o: ['A. 只转发本节点Pod（保源IP，牺牲跨节点）', 'B. 更快', 'C. 安全', 'D. 必开'], a: 'A。需要真实客户端IP的 NodePort/LB 场景；Cluster 模式 SNAT 丢源IP。', g: ['网络', '进阶'] },
+  { t: 'C', d: 2, q: 'K8s 中 Secret 的 base64 与加密的区别？', o: ['A. base64只是编码；加密需 etcd encryption at rest/外部KMS', 'B. base64就是加密', 'C. 自动加密', 'D. 无Secret机制'], a: 'A。RBAC 控制 + 静态加密 + 审计才是完整方案。', g: ['安全'] },
+  { t: 'C', d: 2, q: 'Helm chart 的 values 覆盖顺序（低→高）？', o: ['A. 默认values → values.yaml → -f 覆盖 → --set', 'B. --set最低', 'C. 随机', 'D. 只认--set'], a: 'A。多环境：同一 chart + 不同 values 文件。', g: ['工具'] },
+  { t: 'C', d: 3, q: 'Pod QoS 等级 Guaranteed 的条件？', o: ['A. 每个容器 requests=limits（CPU与内存都设）', 'B. 只设limits', 'C. 不设', 'D. 内存大'], a: 'A。驱逐顺序：BestEffort → Burstable → Guaranteed。核心服务建议 Guaranteed。', g: ['资源', '进阶'] },
+  { t: 'C', d: 3, q: 'etcd quorum 丢失（多数节点挂）集群会？', o: ['A. 只读保护（不可写），多数恢复后自愈', 'B. 完全不可用含读', 'C. 自动重建', 'D. 选新主继续写'], a: 'A。3节点挂2=不可写。这就是控制面建议3或5节点奇数的原因。', g: ['架构', '进阶'] },
+  { t: 'C', d: 3, q: 'kubectl drain 做了什么？', o: ['A. cordon不可调度+驱逐Pod（遵守PDB）', 'B. 关机', 'C. 删节点', 'D. 重启kubelet'], a: 'A。维护窗口标准动作：drain → 维修 → uncordon。', g: ['运维'] },
+  { t: 'QA', d: 2, q: 'Service 访问不通的排查五步。', a: '1. endpoints 是否有地址（selector/labels 匹配？）\n2. Pod 本身 ready？（readiness 没过不在 endpoints）\n3. 用 ClusterIP+port curl（注意是 Service port 还是 targetPort）\n4. 临时 pod 分层测：DNS 名 → IP → 直连 Pod\n5. NetworkPolicy/kube-proxy(ipvs/iptables) 状态\n\n80% 是 selector 不匹配或 readiness 没过。', g: ['排障', '必考'] },
+  { t: 'QA', d: 2, q: '如何给 K8s 里的 Java 服务做优雅发布（完整链路）？', a: '1. 镜像 tag 唯一 + readiness 真实健康\n2. preStop: sleep 10（等LB摘流）+ 应用 SIGTERM 优雅停（线程池排空）\n3. terminationGracePeriodSeconds ≥ 停机时长\n4. maxSurge/maxUnavailable 控制节奏\n5. 发布中 pause 观察 P99/错误率，异常 undo\n6. 数据库变更提前单独发布且向后兼容', g: ['发布', '必考'] },
+  { t: 'QA', d: 3, q: '集群证书、组件、节点的巡检清单（月度）。', a: '1. 证书：kubeadm certs check-expiration（<30天告警）\n2. 组件：systemctl status kubelet、控制面静态Pod 状态\n3. etcd：健康+延迟+磁盘（db size）+快照备份可恢复演练\n4. 节点：NotReady、Pressure、内核版本一致性\n5. 漏洞：镜像 CVE 扫描、kube-bench（CIS基线）\n6. 容量：各节点分配率/水位趋势', g: ['运维', '实战'] },
+]

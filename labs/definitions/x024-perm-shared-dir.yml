@@ -1,0 +1,35 @@
+code: perm-shared-dir
+name: 团队共享目录（SGID）
+topic: linux
+difficulty: 3
+sortOrder: 24
+tags: [SGID]
+timeLimitMinutes: 40
+scenario: |
+  两个用户 alice/bob 共用 /data/team，要求互相能读写对方新文件。
+  任务：建立 team 组并加入两用户；给 /data/team 设置 SGID 和组权限，使 bob 创建的文件 alice 可写。
+setup: |
+  id -u alice >/dev/null 2>&1 || useradd -m alice
+  id -u bob >/dev/null 2>&1 || useradd -m bob
+  mkdir -p /data/team
+  chown root:root /data/team
+  chmod 755 /data/team
+check: |
+  su bob -c 'echo hello > /data/team/bob.txt' 2>/dev/null
+  w=$(su alice -c 'test -w /data/team/bob.txt && echo y || echo n' 2>/dev/null)
+  if [ "$w" = "y" ]; then
+    echo '{"pass":true,"score":100,"message":"完成！SGID 共享目录生效"}'
+  else
+    echo '{"pass":false,"score":0,"message":"alice 仍不可写 bob 的文件（SGID 2775 + 同组）"}'
+  fi
+hints:
+  - 建组加人：groupadd team; usermod -aG team alice bob
+  - SGID：chmod 2775 /data/team（目录新文件继承组）
+  - bob 的默认 umask 可能 022——需要 umask 002 或 g+rw 补齐
+solution: |
+  groupadd team
+  usermod -aG team alice; usermod -aG team bob
+  chgrp team /data/team
+  chmod 2775 /data/team
+  su bob -c 'umask 002; echo hello > /data/team/bob.txt'
+  su alice -c 'echo edited >> /data/team/bob.txt && cat /data/team/bob.txt'

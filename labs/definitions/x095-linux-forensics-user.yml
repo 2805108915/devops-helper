@@ -1,0 +1,26 @@
+code: linux-forensics-user
+name: 安全取证：谁动过系统
+topic: linux
+difficulty: 3
+sortOrder: 95
+tags: [安全, 综合]
+timeLimitMinutes: 45
+scenario: |
+  疑似有人动过机器。任务：1) 查看成功登录记录（last）与失败记录（lastb）2) 找出 /etc/passwd 中 shell 为 /bin/bash 的可登录用户数写入 /root/users.txt。
+setup: |
+  echo ok
+check: |
+  n=$(cat /root/users.txt 2>/dev/null | grep -oE "^[0-9]+$")
+  real=$(getent passwd | grep -c "/bin/bash")
+  if [ -n "$n" ] && [ "$n" = "$real" ]; then
+    echo '{"pass":true,"score":100,"message":"完成！基础取证完成"}'
+  else
+    echo '{"pass":false,"score":0,"message":"统计可登录用户（getent passwd | grep -c /bin/bash）"}'
+  fi
+hints:
+  - last / lastb 看登录
+  - getent passwd 列用户
+  - grep -c 统计计数写入文件
+solution: |
+  last | head; lastb 2>/dev/null | head
+  getent passwd | grep "/bin/bash" | wc -l | tee /root/users.txt

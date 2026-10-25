@@ -1,0 +1,32 @@
+code: find-large-files
+name: 找出并清理超大日志
+topic: linux
+difficulty: 1
+sortOrder: 11
+tags: [find, du]
+timeLimitMinutes: 30
+scenario: |
+  告警：磁盘 92%。已知 /var/log/app 下日志暴涨。
+  任务：删除超过 50MB 的日志文件（保留 app.log），使目录小于 5MB。
+setup: |
+  mkdir -p /var/log/app
+  dd if=/dev/zero of=/var/log/app/app.log.1 bs=1M count=120 status=none
+  dd if=/dev/zero of=/var/log/app/old-debug.log bs=1M count=90 status=none
+  dd if=/dev/zero of=/var/log/app/trace.bin bs=1M count=60 status=none
+  echo running > /var/log/app/app.log
+check: |
+  sz=$(du -sm /var/log/app | awk '{print $1}')
+  if [ "$sz" -lt 5 ] && [ -f /var/log/app/app.log ]; then
+    echo '{"pass":true,"score":100,"message":"完成！垃圾清理干净且保留在用日志"}'
+  else
+    echo '{"pass":false,"score":0,"message":"目录还有 '$sz'MB 或 app.log 被删了"}'
+  fi
+hints:
+  - 定位：du -sh /var/log/app/*
+  - 按大小找：find /var/log/app -size +50M
+  - 确认后删除，别动 app.log
+solution: |
+  du -sh /var/log/app/*
+  find /var/log/app -size +50M -ls
+  rm /var/log/app/app.log.1 /var/log/app/old-debug.log /var/log/app/trace.bin
+  du -sm /var/log/app

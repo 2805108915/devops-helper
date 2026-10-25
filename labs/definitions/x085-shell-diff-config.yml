@@ -1,0 +1,27 @@
+code: shell-diff-config
+name: 配置差异对比
+topic: shell
+difficulty: 1
+sortOrder: 85
+tags: [diff]
+timeLimitMinutes: 30
+scenario: |
+  发布前后配置对比：找出 /opt/conf/old.cnf 与 new.cnf 的差异。
+  任务：把 diff 结果写入 /root/conf-diff.txt（文件应含 < 或 > 行）。
+setup: |
+  mkdir -p /opt/conf
+  printf "a=1\nb=2\nc=3\n" > /opt/conf/old.cnf
+  printf "a=1\nb=20\nd=4\n" > /opt/conf/new.cnf
+check: |
+  if [ -f /root/conf-diff.txt ] && grep -qE "^<|^>" /root/conf-diff.txt; then
+    echo '{"pass":true,"score":100,"message":"完成！差异留档"}'
+  else
+    echo '{"pass":false,"score":0,"message":"diff -u old new > /root/conf-diff.txt"}'
+  fi
+hints:
+  - diff -u 更易读
+  - 重定向
+  - 看懂 < 与 > 含义（旧/新）
+solution: |
+  diff -u /opt/conf/old.cnf /opt/conf/new.cnf > /root/conf-diff.txt
+  cat /root/conf-diff.txt

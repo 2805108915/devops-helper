@@ -1,0 +1,38 @@
+code: redis-auth-set
+name: 给 Redis 设置密码
+topic: mw
+difficulty: 2
+sortOrder: 67
+tags: [redis, 安全]
+timeLimitMinutes: 40
+scenario: |
+  安全基线：Redis 必须密码访问。
+  任务：启动带 requirepass lab2026 的 redis，验证无密码 ping 报错、带密码 ping 返回 PONG。
+setup: |
+  pkill -x redis-server 2>/dev/null; sleep 1
+  cat > /etc/redis/redis.conf <<EOF
+  bind 127.0.0.1
+  port 6379
+  daemonize yes
+  requirepass lab2026
+  logfile /var/log/redis/redis.log
+  dir /var/lib/redis
+  EOF
+  mkdir -p /var/log/redis /var/lib/redis
+check: |
+  noauth=$(redis-cli ping 2>&1 | grep -ci "NOAUTH\|authentication" || true)
+  ok=$(redis-cli -a lab2026 --no-auth-warning ping 2>/dev/null)
+  if [ "$ok" = "PONG" ] && [ "$noauth" -ge 1 ]; then
+    echo '{"pass":true,"score":100,"message":"完成！密码认证生效"}'
+  else
+    echo '{"pass":false,"score":0,"message":"启动后：redis-cli -a lab2026 ping 应 PONG，无密码应报 NOAUTH"}'
+  fi
+hints:
+  - 配置文件已含 requirepass，直接启动
+  - redis-server /etc/redis/redis.conf
+  - 验证两种访问
+solution: |
+  redis-server /etc/redis/redis.conf
+  sleep 1
+  redis-cli ping
+  redis-cli -a lab2026 --no-auth-warning ping

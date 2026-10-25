@@ -1,0 +1,36 @@
+code: proc-oom-trace
+name: OOM 现场取证与修复
+topic: linux
+difficulty: 2
+sortOrder: 30
+tags: [OOM, dmesg]
+timeLimitMinutes: 30
+scenario: |
+  服务进程莫名消失，疑似被 OOM Kill。
+  任务：1) 在 dmesg 里找到 OOM 记录确认被杀进程名 2) 把含该进程名的 OOM 行写入 /root/oom-evidence.txt 3) 用提供的启动脚本重启服务并确保进程存活。
+setup: |
+  dmesg -c >/dev/null 2>&1 || true
+  echo "[ 1234.567 ] Out of memory: Killed process 666 (javabiz) total-vm:2048000kB
+  [ 1234.568 ] oom_reaper: reaped process 666 (javabiz)" >> /dev/kmsg 2>/dev/null || echo "[ 1234.567 ] Out of memory: Killed process 666 (javabiz) total-vm:2048000kB" > /var/log/kern.log
+  cat > /opt/app/start.sh <<EOF
+  #!/bin/bash
+  nohup sh -c 'while :; do sleep 5; done' >/var/log/app.log 2>&1 &
+  echo $! > /var/run/app.pid
+  EOF
+  chmod +x /opt/app/start.sh 2>/dev/null || { mkdir -p /opt/app && chmod +x /opt/app/start.sh; }
+check: |
+  ok=1
+  grep -q javabiz /root/oom-evidence.txt 2>/dev/null || ok=0
+  kill -0 "$(cat /var/run/app.pid 2>/dev/null)" 2>/dev/null || ok=0
+  if [ "$ok" = "1" ]; then echo '{"pass":true,"score":100,"message":"完成！证据留存且服务已恢复"}'
+  else echo '{"pass":false,"score":0,"message":"需要 oom 证据文件 + 存活的应用进程（/opt/app/start.sh）"}'
+  fi
+hints:
+  - dmesg | grep -i "out of memory"（容器里也看 /var/log/kern.log）
+  - 证据落盘：dmesg | grep javabiz > /root/oom-evidence.txt
+  - 启动：/opt/app/start.sh
+solution: |
+  dmesg | grep -i oom || grep -i "out of memory" /var/log/kern.log
+  dmesg 2>/dev/null | grep javabiz > /root/oom-evidence.txt || grep javabiz /var/log/kern.log > /root/oom-evidence.txt
+  /opt/app/start.sh
+  cat /root/oom-evidence.txt; kill -0 $(cat /var/run/app.pid) && echo ALIVE

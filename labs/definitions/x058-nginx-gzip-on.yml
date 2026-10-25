@@ -1,0 +1,32 @@
+code: nginx-gzip-on
+name: 开启 Gzip 压缩
+topic: nginx
+difficulty: 2
+sortOrder: 58
+tags: [优化]
+timeLimitMinutes: 30
+scenario: |
+  页面传输太大要开压缩。
+  任务：在 nginx http 块开启 gzip（含 text/css application/json），reload 后用 curl -H "Accept-Encoding: gzip" 验证响应头含 Content-Encoding: gzip（判分直接检查配置与响应）。
+setup: |
+  dd if=/dev/zero of=/var/www/html/big.js bs=1K count=256 status=none
+  nginx 2>/dev/null || true
+check: |
+  h=$(curl -s -o /dev/null -D - -H "Accept-Encoding: gzip" --max-time 3 http://127.0.0.1/big.js 2>/dev/null | grep -i "content-encoding: gzip" | wc -l)
+  c=$(grep -c "gzip on" /etc/nginx/nginx.conf)
+  if [ "$h" -ge 1 ] && [ "$c" -ge 1 ]; then
+    echo '{"pass":true,"score":100,"message":"完成！压缩已生效"}'
+  else
+    echo '{"pass":false,"score":0,"message":"http{} 里 gzip on; gzip_types ...; 然后 reload"}'
+  fi
+hints:
+  - 在 nginx.conf 的 http{} 里加 gzip on; gzip_types text/css application/json;
+  - nginx -t && nginx -s reload
+  - 验证：curl -H "Accept-Encoding: gzip" -I
+solution: |
+  vi /etc/nginx/nginx.conf   # http{} 内加两行
+  gzip on;
+  gzip_types text/css application/json;
+  # 保存后：
+  nginx -t && nginx -s reload
+  curl -s -D - -o /dev/null -H "Accept-Encoding: gzip" http://127.0.0.1/big.js | grep -i encoding

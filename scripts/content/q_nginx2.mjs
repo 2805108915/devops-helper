@@ -1,0 +1,21 @@
+// Nginx 补充题
+export const Q = [
+  { t: 'C', d: 1, q: 'Nginx 配置文件的主结构与层次？', o: ['A. main→http→server→location', 'B. server→http', 'C. location→server→http', 'D. 平级'], a: 'A。events{} 在 main 层；upstream 在 http 层。指令位置错会报 "directive not allowed here"。', g: ['配置'] },
+  { t: 'C', d: 1, q: '静态站点 root 与 alias 的区别？', o: ['A. root 拼接location路径；alias 直接替换', 'B. 相同', 'C. alias只能全局', 'D. root只支持变量'], a: 'A。location /i/ { root /data/w; } → /data/w/i/x；alias /data/w/ → /data/w/x。alias 结尾斜杠易错。', g: ['配置', '坑'] },
+  { t: 'C', d: 1, q: 'return 与 rewrite 都能跳转，简单跳转用？', o: ['A. return（直接返回，高效）', 'B. rewrite', 'C. proxy', 'D. error_page'], a: 'A。return 301 https://...；rewrite 适合需要捕获变量/多条规则的复杂场景。', g: ['配置'] },
+  { t: 'C', d: 2, q: 'client_body_timeout 与 proxy_read_timeout 分别管哪段？', o: ['A. 客户端发体的时长 / 等后端响应的时长', 'B. 相同', 'C. DNS/证书', 'D. 都是连接超时'], a: 'A。三个超时各管一段：客户端侧（client_*）、到后端（proxy_connect/send/read）。定位超时要先分段。', g: ['配置'] },
+  { t: 'C', d: 2, q: 'proxy_set_header Host $host 为什么重要？', o: ['A. 后端按域名区分虚拟主机/路由必须', 'B. 仅记录', 'C. 安全', 'D. 无关'], a: 'A。不透传 Host，后端多站点会全落到默认站。同组必带 X-Real-IP/XFF。', g: ['配置', '必考'] },
+  { t: 'C', d: 2, q: 'stub_status 模块看什么？', o: ['A. active connections/读写等待数（Nginx 自身状态）', 'B. 后端状态', 'C. 日志', 'D. CPU'], a: 'A。location /nginx_status { stub_status; } 配白名单。判断 Nginx 层是否为瓶颈。', g: ['监控'] },
+  { t: 'C', d: 2, q: 'error.log 里 "upstream sent too big header" 怎么办？', o: ['A. 调 proxy_buffer_size/proxy_buffers', 'B. 重启', 'C. 换机器', 'D. 502正常'], a: 'A。后端返回大 cookie/header 时常见：proxy_buffer_size 32k; proxy_busy_buffers_size 64k。', g: ['排障'] },
+  { t: 'C', d: 2, q: '"worker_connections are not enough" 说明？', o: ['A. 连接数达上限：调大配置与ulimit', 'B. 内存不足', 'C. CPU', 'D. 后端问题'], a: 'A。同时核对 worker_rlimit_nofile 与系统 nofile。', g: ['调优'] },
+  { t: 'C', d: 2, q: 'geoip/realip 模块：set_real_ip_from 用于？', o: ['A. 声明可信代理段，从XFF还原真实IP', 'B. 封禁IP', 'C. 加速', 'D. 日志'], a: 'A。多层代理链必备；real_ip_recursive on 处理多级。', g: ['架构'] },
+  { t: 'C', d: 2, q: '同一个 server_name 多个域名的写法？', o: ['A. server_name a.com b.com *.c.com;', 'B. 多个server块 only', 'C. 不支持', 'D. 分号分隔不同含义'], a: 'A。泛域名 *.x.com 与正则 server_name ~^... 也可。', g: ['配置'] },
+  { t: 'C', d: 2, q: 'Nginx 变量 $host、$http_host、$proxy_add_x_forwarded_for 分别？', o: ['A. 请求主机名 / 带端口的原样Host / 追加本机IP的XFF链', 'B. 相同', 'C. 客户端IP三种', 'D. 服务端信息'], a: 'A。反代三件套必背。', g: ['配置', '必背'] },
+  { t: 'C', d: 3, q: 'map 指令的典型用途？', o: ['A. 按条件给变量赋值（灰度分流/日志开关）', 'B. 地图', 'C. 路由表', 'D. 限流 only'], a: 'A。map $http_x_gray $up { default prod; "1" canary; } + proxy_pass http://$up。', g: ['进阶'] },
+  { t: 'C', d: 3, q: 'upstream keepalive 为什么要配 proxy_http_version 1.1？', o: ['A. HTTP/1.1 默认长连接，1.0 短连接会废掉连接池', 'B. 性能玄学', 'C. 安全', 'D. 不必要'], a: 'A。还需 proxy_set_header Connection ""。三行组合是反代提速标配。', g: ['调优', '进阶'] },
+  { t: 'C', d: 3, q: 'split_clients 指令用于？', o: ['A. 按比例哈希分流（百分比灰度）', 'B. 分割日志', 'C. 限流', 'D. 静态切分'], a: 'A。split_clients "${remote_addr}${...}" $bucket { 10% canary; * prod; }。', g: ['进阶'] },
+  { t: 'C', d: 3, q: 'Nginx 热升级（二进制）流程的核心？', o: ['A. 新二进制+USR2+WINCH+QUIT 平滑切worker', 'B. 直接覆盖重启', 'C. reload即可', 'D. 不支持'], a: 'A。低频但体现原理理解：master 不杀老 worker 直到确认新版本稳定。', g: ['原理', '进阶'] },
+  { t: 'QA', d: 2, q: '一段标准 HTTPS + HTTP2 + 反代 + 静态站点的 server 配置（默写要点）。', a: '```nginx\nserver {\n  listen 443 ssl http2;\n  server_name app.com;\n  ssl_certificate /c/fullchain.pem;\n  ssl_certificate_key /c/privkey.pem;\n  location /api/ { proxy_pass http://apps/; proxy_set_header Host $host; proxy_set_header X-Real-IP $remote_addr; }\n  location / { root /var/www/app; try_files $uri $uri/ /index.html; }\n}\nserver { listen 80; return 301 https://$host$request_uri; }\n```', g: ['配置', '必考'] },
+  { t: 'QA', d: 2, q: 'Nginx 502 你在 error.log 里见过哪几种报错？分别指向什么？', a: '1. connect() failed (111: Connection refused) → 后端没监听\n2. connect() failed (110: timed out) → 后端/防火墙黑洞\n3. recv() failed (104: Connection reset by peer) → 后端崩/杀连接（OOM常见）\n4. upstream sent too big header → 缓冲区\n5. no live upstreams → 全部摘除\n\n按报错分流处理，别一律重启。', g: ['排障', '必考'] },
+  { t: 'QA', d: 3, q: '如何在 Nginx 层保护后端（防止被打穿）？至少4个手段。', a: '1. limit_req/limit_conn 限流限连\n2. 超时收紧（proxy_connect 3s/read 10s）快速失败\n3. max_fails 摘除故障后端 + backup 降级页\n4. 请求体与头大小限制（client_max_body_size/large_client_header_buffers）\n5. 条件封禁（geo/deny 恶意段）\n6. 缓存兜底（proxy_cache_use_stale）\n网关是保护后端的第一道闸门。', g: ['高可用', '实战'] },
+]

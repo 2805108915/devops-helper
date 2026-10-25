@@ -1,0 +1,30 @@
+code: find-old-logs
+name: 清理 7 天前的归档日志
+topic: linux
+difficulty: 1
+sortOrder: 13
+tags: [find, mtime]
+timeLimitMinutes: 30
+scenario: |
+  归档目录 /archive 只需保留 7 天内的文件。
+  任务：删除修改时间在 7 天前的 .log.gz 文件，保留 7 天内的。
+setup: |
+  mkdir -p /archive
+  echo a > /archive/d1.log.gz; touch -d "10 days ago" /archive/d1.log.gz
+  echo b > /archive/d2.log.gz; touch -d "15 days ago" /archive/d2.log.gz
+  echo c > /archive/new.log.gz; touch -d "2 days ago" /archive/new.log.gz
+  echo d > /archive/today.log.gz
+check: |
+  if [ -f /archive/new.log.gz ] && [ -f /archive/today.log.gz ] && [ ! -f /archive/d1.log.gz ] && [ ! -f /archive/d2.log.gz ]; then
+    echo '{"pass":true,"score":100,"message":"完成！旧的清了新的保留"}'
+  else
+    echo '{"pass":false,"score":0,"message":"检查 -mtime +7 与保留文件"}'
+  fi
+hints:
+  - 7天前 = -mtime +7
+  - 先 -ls 预览再 -delete
+  - 验证 ls -la /archive
+solution: |
+  find /archive -name "*.log.gz" -mtime +7 -ls
+  find /archive -name "*.log.gz" -mtime +7 -delete
+  ls -la /archive

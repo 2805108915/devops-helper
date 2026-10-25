@@ -1,0 +1,29 @@
+code: mw-http-cache-check
+name: HTTP 缓存头验证
+topic: network
+difficulty: 2
+sortOrder: 100
+tags: [HTTP]
+timeLimitMinutes: 40
+scenario: |
+  静态资源要配长缓存。
+  任务：给 nginx 的 .txt/.js 加 expires 30d，reload 后 curl -I 验证响应头含 Cache-Control/max-age（把该头写入 /root/cachehdr.txt）。
+setup: |
+  echo "cache test" > /var/www/html/f.js
+  nginx 2>/dev/null || true
+check: |
+  if grep -qiE "cache-control|max-age" /root/cachehdr.txt 2>/dev/null; then
+    echo '{"pass":true,"score":100,"message":"完成！强缓存生效"}'
+  else
+    echo '{"pass":false,"score":0,"message":"location ~ .*\\.(js|txt)$ { expires 30d; } 后 curl -I 落盘"}'
+  fi
+hints:
+  - server{} 加 location ~ .*\.(js|txt)$ { root /var/www/html; expires 30d; }
+  - nginx -t && nginx -s reload
+  - curl -I http://127.0.0.1/f.js | grep -i cache
+solution: |
+  # 在 server 配置中加 location
+  vi /etc/nginx/sites-available/default 2>/dev/null || vi /etc/nginx/nginx.conf
+  # location ~ .*\.(js|txt)$ { root /var/www/html; expires 30d; }
+  nginx -t && nginx -s reload
+  curl -sI http://127.0.0.1/f.js | grep -iE "cache-control|max-age|expires" | tee /root/cachehdr.txt

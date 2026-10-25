@@ -1,0 +1,31 @@
+code: nginx-rate-limit
+name: 接口限流
+topic: nginx
+difficulty: 3
+sortOrder: 62
+tags: [限流]
+timeLimitMinutes: 40
+scenario: |
+  登录接口被脚本刷，要限速：对 /login 限 1 r/s。
+  任务：配置 limit_req（zone 在 http 块定义），reload 后连发 10 次请求应出现非 200 状态（429/503）。
+setup: |
+  mkdir -p /var/www/html; echo login > /var/www/html/login
+  nginx 2>/dev/null || true
+check: |
+  codes=$(for i in $(seq 1 10); do curl -s -o /dev/null -w "%{http_code} " --max-time 2 http://127.0.0.1/login 2>/dev/null; done)
+  limited=$(echo "$codes" | grep -oE "429|503" | wc -l)
+  if [ "$limited" -ge 1 ]; then
+    echo '{"pass":true,"score":100,"message":"完成！限流生效"}'
+  else
+    echo '{"pass":false,"score":0,"message":"limit_req_zone 定义在 http{}，location /login 应用 limit_req"}'
+  fi
+hints:
+  - http{}：limit_req_zone $binary_remote_addr zone=lg:1m rate=1r/s;
+  - location /login { limit_req zone=lg burst=2 nodelay; }
+  - reload 后 for 循环 curl 观察
+solution: |
+  # http{} 内： limit_req_zone $binary_remote_addr zone=lg:1m rate=1r/s;
+  # server 的 location /login { limit_req zone=lg; root /var/www/html; }
+  vi /etc/nginx/nginx.conf
+  nginx -t && nginx -s reload
+  for i in $(seq 1 10); do curl -s -o /dev/null -w "%{http_code} " http://127.0.0.1/login; done; echo

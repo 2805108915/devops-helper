@@ -1,0 +1,40 @@
+code: nginx-proxy-prefix
+name: 反代路径拼接 404
+topic: nginx
+difficulty: 2
+sortOrder: 59
+tags: [proxy_pass, 坑]
+timeLimitMinutes: 30
+scenario: |
+  /api/ 反代到后端 9000，但后端收到的路径带 /api 前缀导致 404。
+  任务：修正 proxy_pass 使 curl http://127.0.0.1/api/ 返回 API_OK。
+setup: |
+  mkdir -p /opt/bk
+  echo "API_OK" > /opt/bk/index.html
+  nohup python3 -m http.server 9000 --directory /opt/bk --bind 127.0.0.1 >/dev/null 2>&1 &
+  cat > /etc/nginx/sites-available/api <<EOF
+  server {
+      listen 80;
+      location /api/ {
+          proxy_pass http://127.0.0.1:9000;
+      }
+  }
+  EOF
+  ln -sf /etc/nginx/sites-available/api /etc/nginx/sites-enabled/api
+  rm -f /etc/nginx/sites-enabled/default
+  nginx 2>/dev/null || nginx -s reload 2>/dev/null || true
+check: |
+  out=$(curl -s --max-time 3 http://127.0.0.1/api/ 2>/dev/null)
+  if echo "$out" | grep -q API_OK; then
+    echo '{"pass":true,"score":100,"message":"完成！路径语义修正"}'
+  else
+    echo '{"pass":false,"score":0,"message":"proxy_pass 末尾加 / 即可剥离 /api 前缀，改后 reload"}'
+  fi
+hints:
+  - 现象：后端收到 /api/ 而不是 /
+  - proxy_pass http://127.0.0.1:9000/;（注意尾部斜杠）
+  - reload 后验证
+solution: |
+  sed -i 's|proxy_pass http://127.0.0.1:9000;|proxy_pass http://127.0.0.1:9000/;|' /etc/nginx/sites-available/api
+  nginx -t && nginx -s reload
+  curl -s http://127.0.0.1/api/

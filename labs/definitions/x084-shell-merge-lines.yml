@@ -1,0 +1,27 @@
+code: shell-merge-lines
+name: 两文件按行合并
+topic: shell
+difficulty: 2
+sortOrder: 84
+tags: [paste, join]
+timeLimitMinutes: 30
+scenario: |
+  /data/ips.txt 与 /data/names.txt 行对行对应（第i行名字属于第i行IP）。
+  任务：合并为 "名字 IP" 每行写入 /root/merge.txt。
+setup: |
+  mkdir -p /data
+  printf "10.0.0.1\n10.0.0.2\n10.0.0.3\n" > /data/ips.txt
+  printf "web1\ndb1\ncache1\n" > /data/names.txt
+check: |
+  if [ -f /root/merge.txt ] && grep -q "web1 10.0.0.1" /root/merge.txt && [ "$(wc -l < /root/merge.txt)" -ge 3 ]; then
+    echo '{"pass":true,"score":100,"message":"完成！合并成功"}'
+  else
+    echo '{"pass":false,"score":0,"message":"paste names.txt ips.txt 处理列序"}'
+  fi
+hints:
+  - paste -d" " file1 file2
+  - 注意名字在前IP在后
+  - 落盘验证
+solution: |
+  paste -d" " /data/names.txt /data/ips.txt > /root/merge.txt
+  cat /root/merge.txt

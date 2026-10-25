@@ -1,0 +1,33 @@
+code: shell-script-syntax-fix
+name: 脚本语法错修复
+topic: shell
+difficulty: 1
+sortOrder: 81
+tags: [bash]
+timeLimitMinutes: 30
+scenario: |
+  /opt/run.sh 跑不起来（语法错）。
+  任务：用 bash -n 定位修复，使脚本输出 SCRIPT_OK 并把结果写入 /tmp/run.out。
+setup: |
+  cat > /opt/run.sh <<EOF
+  #!/bin/bash
+  if [ -f /etc/hostname ]
+  then
+  echo "SCRIPT_OK"
+  fi
+  EOF
+  chmod +x /opt/run.sh
+check: |
+  if /opt/run.sh > /tmp/run.out 2>/dev/null && grep -q SCRIPT_OK /tmp/run.out; then
+    echo '{"pass":true,"score":100,"message":"完成！脚本可运行"}'
+  else
+    echo '{"pass":false,"score":0,"message":"bash -n /opt/run.sh 看缺什么（then 后的 fi?）"}'
+  fi
+hints:
+  - 诊断：bash -n /opt/run.sh
+  - 缺 fi（if 块没闭合）
+  - 补上后运行
+solution: |
+  bash -n /opt/run.sh
+  echo "fi" >> /opt/run.sh
+  bash -n /opt/run.sh && /opt/run.sh | tee /tmp/run.out

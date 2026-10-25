@@ -1,0 +1,75 @@
+// 杂集：跨主题补量（to 字段指定主题）
+export const Q = [
+  // linux
+  { to: 'linux', t: 'C', d: 1, q: 'cp -a 与 cp -r 的区别？', o: ['A. -a 归档（含权限/时间/链接，等-rpP）', 'B. 相同', 'C. -a更快', 'D. -r保权限'], a: 'A。备份目录用 -a。', g: ['基础'] },
+  { to: 'linux', t: 'C', d: 2, q: 'rm -i 与 rm -f 的经典 alias 建议是？', o: ['A. root 默认 rm=rm -i（多一道确认）', 'B. 建议 rm=rm -f', 'C. 无 alias', 'D. 脚本里用 -i'], a: 'A。交互确认保命；脚本里避免依赖 alias（用绝对判断）。', g: ['素养'] },
+  { to: 'linux', t: 'QA', d: 2, q: '如何查看与合并上一条命令的 stdout 和 stderr 都落日志？', a: '```bash\ncommand >>app.log 2>&1   # 或 &>>app.log\n```\n顺序不能反（2>&1 要在 > 之后）。', g: ['重定向'] },
+  { to: 'linux', t: 'QA', d: 2, q: '新手运维最常犯的三个危险操作？如何预防？', a: '1. rm -rf 变量空（rm -rf /$DIR 当 DIR 空）→ 判空+绝对路径校验\n2. 在生产库直连执行 update 无 where → 变更平台+备份+begin 前 select 确认\n3. 覆盖配置不备份 → cp xx xx.$(date +%F).bak\n共同解法：高危命令 checklist + 二次确认 + 操作可回滚。', g: ['素养', '必考'] },
+  { to: 'linux', t: 'QA', d: 3, q: '服务器负载高但你 top/df/free 都看了正常，下一步？', a: '1. vmstat 1 看 r 列（运行队列）与 cs（上下文切换）\n2. pidstat -w 看谁在切换（锁竞争/线程过多）\n3. iostat -x 1 换窗口看瞬时（top 瞬时值可能错过尖刺）\n4. dmesg 尾部看内核异常\n5. 对照监控历史曲线（sar）定位开始时刻与关联变更\n"瞬时问题用滑动窗口工具看"。', g: ['性能'] },
+  { to: 'linux', t: 'QA', d: 3, q: '解释 /etc/fstab 六个字段。', a: '设备(或UUID) 挂载点 类型 挂载选项 dump备份频次 fsck顺序。\n运维要点：用 UUID（设备名会变）；nofail 防外挂盘故障卡启动；改错 fstab 会导致启动失败（rescue 模式修）。', g: ['磁盘'] },
+  // network
+  { to: 'network', t: 'C', d: 1, q: '一次 HTTP 请求默认端口是？', o: ['A. 80', 'B. 443', 'C. 8080', 'D. 53'], a: 'A。https 443，DNS 53。', g: ['基础', '必背'] },
+  { to: 'network', t: 'C', d: 2, q: 'telnet 通但应用登录报 "connection closed"，方向？', o: ['A. 端口通了是应用层断连（认证失败/协议不匹配/后端依赖）', 'B. 网络问题', 'C. DNS', 'D. 一定防火墙'], a: 'A。分层定位：TCP OK 后问题移交应用日志。', g: ['排障'] },
+  { to: 'network', t: 'QA', d: 2, q: '怎么快速判断"网站慢"是前端资源还是接口慢？', a: '浏览器 F12 Network（或 curl -w 分段）：\n1. HTML/静态资源总耗时 vs XHR 接口耗时\n2. 接口 waiting(TTFB) 长=服务端；content download 长=传输/体积\n3. 前端渲染（Performance 面板）\n给结论必须带数据（哪个资源/接口多少ms）。', g: ['排障', '实战'] },
+  { to: 'network', t: 'QA', d: 3, q: '设计单点登录(SSO)的网络与会话要点（运维视角）。', a: '1. 统一认证中心 + 票据（token）校验\n2. 会话：集中存储（Redis）+ 签名 cookie（HttpOnly/Secure）\n3. 各业务系统回调白名单\n4. 登出广播（token 失效）\n5. 认证中心自身高可用与压测（它是全站单点！）', g: ['架构'] },
+  { to: 'network', t: 'QA', d: 3, q: '抓包文件过大（几个G），怎么高效分析？', a: '1. 捕获时就过滤（host/port），或 -s 0 换 -s 96 抓头\n2. 多文件轮转：-C 100 -W 20\n3. 分析用 editcap 切片 / tshark 过滤统计（tshark -r x.pcap -Y "http" ）\n4. 元数据先行：capinfos 看概览\n"抓包前想清楚要什么"是最好的优化。', g: ['抓包', '进阶'] },
+  // shell
+  { to: 'shell', t: 'C', d: 1, q: '输出重定向 >> 与 2>> 分别？', o: ['A. 追加stdout / 追加stderr', 'B. 相同', 'C. 覆盖', 'D. 只文件'], a: 'A。日志分离采集常用：out 与 err 分文件。', g: ['重定向'] },
+  { to: 'shell', t: 'C', d: 2, q: '判断字符串包含子串的标准写法？', o: ['A. [[ $s == *sub* ]]', 'B. grep only', 'C. == "sub"', 'D. 无法'], a: 'A。或 case "$s" in *sub*) ;; esac（POSIX）。', g: ['语法'] },
+  { to: 'shell', t: 'QA', d: 2, q: '如何让脚本在CentOS/Ubuntu/alpine都能跑？', a: '1. #!/bin/sh + POSIX 语法（alpine 无 bash！）\n2. 避免 bashism：[[ ]]、数组、<()\n3. shellcheck --shell=sh 检查\n4. 差异命令做探测分支（yum/apt/apk）\n跨平台脚本必考"sh 兼容"意识。', g: ['工程化'] },
+  { to: 'shell', t: 'QA', d: 3, q: '写一段：从 etcd/consul 之外最简单的方式让多台机器共享一份配置（运维脚本视角）。', a: '最简：HTTP 拉取（对象存储/内网 nginx 放配置，脚本 curl -f -o 下载+校验 md5+reload 服务），失败保留旧版本。三要素：**可校验、原子替换（tmp+mv）、失败可回退**。后续演进 git+ansible。', g: ['实战', '架构'] },
+  // nginx
+  { to: 'nginx', t: 'C', d: 1, q: 'Nginx 的工作模型常被概括为？', o: ['A. 多进程+单线程事件驱动（epoll）', 'B. 多线程每连接', 'C. 单进程', 'D. 协程池'], a: 'A。master/worker + 非阻塞 IO。', g: ['原理', '必考'] },
+  { to: 'nginx', t: 'C', d: 2, q: 'proxy_next_upstream 默认含 error timeout，POST 也会重试吗？', o: ['A. 会在这些场景重试（POST需幂等保护）', 'B. 不会', 'C. 默认关闭重试', 'D. 仅GET'], a: 'A。non_idempotent 相关配置要懂——交易接口重试风险。', g: ['坑', '进阶'] },
+  { to: 'nginx', t: 'QA', d: 2, q: '站点静态资源偶发 404，刷新又好了，什么鬼？', a: '多实例（或灰度/CDN 多节点）版本不一致：请求轮询/解析到旧节点而资源是新版 hash 命名。排查：比对各节点文件（mdsum）；规范：静态资源带 hash、双版本共存发布、CDN 刷新。', g: ['排障', '实战'] },
+  { to: 'nginx', t: 'QA', d: 3, q: 'Nginx 作为 TCP 四层代理（stream）转发 MySQL 的配置要点？', a: '```nginx\nstream {\n  upstream mysql { server 10.0.0.1:3306; }\n  server { listen 3307; proxy_pass mysql; }\n}\n```\n注意：需编译 --with-stream；与 http{} 平级；无法做 HTTP 级路由，但可 proxy_timeout/连接数控制。典型用途：读写端口分离、外网暴露收敛。', g: ['进阶'] },
+  // docker
+  { to: 'docker', t: 'C', d: 1, q: 'docker ps 默认不显示已停止容器，参数？', o: ['A. -a', 'B. -s', 'C. -q', 'D. -l'], a: 'A。-q 只列ID（配 xargs 用）。', g: ['命令'] },
+  { to: 'docker', t: 'C', d: 2, q: '容器时区/data盘/日志 三件套哪个不是 run 必配？', o: ['A. 看需求都要/e TZ、-v、日志在daemon配置', 'B. 时区必须', 'C. 都不用', 'D. 日志必须 run 传'], a: 'A。日志限制是 daemon.json 全局；TZ 与数据卷是容器级。', g: ['运维'] },
+  { to: 'docker', t: 'QA', d: 2, q: 'docker history 能帮你做什么排障？', a: '看镜像每层构建指令与大小：定位"镜像为什么这么大"（哪层引入了大文件/没清理缓存）、验证 Dockerfile 变更是否生效（层时间戳）。CI 里给镜像瘦身提供依据。', g: ['排障'] },
+  { to: 'docker', t: 'QA', d: 3, q: '如何设计容器的优雅停机链路（从 docker stop 到应用收尾）？', a: '1. ENTRYPOINT exec 格式（PID1 正确）\n2. docker stop -t 30（宽限时间 ≥ 应用收尾耗时）\n3. 应用注册 SIGTERM 钩子：停止接新请求→排空线程池→flush\n4. 强杀前日志标记，便于区分"没收到信号"与"收尾太慢"\n5. 编排层（K8s）再加 preStop/terminationGracePeriod\n完整链路通才叫优雅。', g: ['必考', '进阶'] },
+  // k8s
+  { to: 'k8s', t: 'C', d: 1, q: 'K8s 中"命名空间"被删卡住，常因为？', o: ['A. 里面有资源的 finalizer 未完成', 'B. 网络慢', 'C. 正常', 'D. 权限'], a: 'A。kubectl get ns x -o yaml 看 spec.finalizers；处理完依赖（如 LB/存储未释放）再清。', g: ['排障', '进阶'] },
+  { to: 'k8s', t: 'C', d: 2, q: 'HPA 扩容后 Pod Pending，先看？', o: ['A. describe 新 Pod 的 Events（资源/配额）', 'B. 重启HPA', 'C. 删HPA', 'D. 网络'], a: 'A。常见：集群资源不足或 namespace ResourceQuota 顶满。', g: ['排障'] },
+  { to: 'k8s', t: 'QA', d: 2, q: 'K8s 集群里如何给所有节点统一打标签/污点？', a: 'kubectl label node <selector> key=value --overwrite；批量：for/kubectl get -o name 遍历。污点 kubectl taint node x key=value:NoSchedule。标签是调度体系（nodeSelector/affinity）的基础数据，命名规范先行（env/role/zone）。', g: ['运维'] },
+  { to: 'k8s', t: 'QA', d: 3, q: '业务要 7×24，K8s 集群自身升级怎么做？', a: '1. 控制面逐节点（kubeadm upgrade）：先 etcd 备份；apiserver 轮转\n2. worker 逐台 drain→升级→uncordon（PDB 保业务副本数）\n3. 版本策略：一次小版本、先预发集群\n4. 兼容性：kubelet 不得高于 apiserver；先看 release note 的废弃项\n5. 回退预案与断点续做\n答"逐台+PDB+备份"即专业。', g: ['运维', '进阶'] },
+  // cicd
+  { to: 'cicd', t: 'C', d: 1, q: 'git log --oneline -5 的 -5？', o: ['A. 最近5条', 'B. 前5个文件', 'C. 5分钟内', 'D. 5个分支'], a: 'A。--graph --all 加拓扑。', g: ['Git'] },
+  { to: 'cicd', t: 'C', d: 2, q: '代码扫描(SAST)应放在流水线哪个阶段？', o: ['A. 尽早（PR/commit 阶段快速反馈）', 'B. 部署后', 'C. 上线后', 'D. 任意'], a: 'A。左移原则：越早发现成本越低。', g: ['质量'] },
+  { to: 'cicd', t: 'QA', d: 2, q: 'git 合并产生大量冲突的根因是什么？怎么改善？', a: '根因：分支生命周期长+同文件高频改动+缺乏模块边界。\n改善：1) 小步合入（trunk-based/短分支）2) 常常 rebase 主干 3) 拆模块/接口层减少同文件碰撞 4) 团队约定文件 owner。\n流程服务于协作，而不是反过来。', g: ['治理'] },
+  { to: 'cicd', t: 'QA', d: 3, q: '如何度量研发交付效率（DevOps 指标）？', a: '四大关键指标（DORA）：\n1. 部署频率（越勤越好）\n2. 变更前置时间（提交→上线）\n3. 变更失败率\n4. MTTR（恢复时长）\n数据从流水线+工单系统出，季度复盘改进。有指标才能管理。', g: ['体系', '必考'] },
+  // monitor
+  { to: 'monitor', t: 'C', d: 1, q: 'node_exporter 监控的是？', o: ['A. 主机层（CPU/内存/磁盘/网络）', 'B. 应用JVM', 'C. 数据库', 'D. K8s对象'], a: 'A。应用用 micrometer、K8s 用 kube-state-metrics/cAdvisor。', g: ['监控'] },
+  { to: 'monitor', t: 'C', d: 2, q: '告警模板里带 runbook 链接的意义？', o: ['A. 值班一键看处置步骤（缩短MTTR）', 'B. 好看', 'C. 合规 only', 'D. 无意义'], a: 'A。无 runbook 的告警等于噪音。', g: ['素养'] },
+  { to: 'monitor', t: 'QA', d: 3, q: '你要在 5 分钟内向 CTO 汇报一次线上故障，讲什么？', a: '模板：\n1. 一句话现状：什么服务、什么影响（用户量/资损）、现在还坏吗\n2. 时间线：发现→止血（已做/在做）\n3. 初判根因方向（不确定就说不确定）\n4. 需要的支持（决策/资源）\n5. 下一步与预计恢复时间\n汇报≠甩锅也≠细节堆砌：**影响+进展+诉求**。', g: ['素养', '必考'] },
+  { to: 'monitor', t: 'QA', d: 3, q: '监控告警"狼来了"之后团队麻痹，怎么系统性治理？', a: '1. 数据盘点：两周告警总量/分类/响应率\n2. 分层砍杀：不可行动的删、可合并的聚合（group）、可自动处理的自愈（脚本接管）\n3. 阈值重定：基于 SLO 与环比而非拍脑袋\n4. 升级机制：长时间无人认领自动升级主管\n5. 每月告警质量复盘（信噪比 KPI）\n治理是持续过程，不是一次性运动。', g: ['治理', '实战'] },
+  // mysql
+  { to: 'mysql', t: 'C', d: 1, q: '查看表索引的命令？', o: ['A. SHOW INDEX FROM t', 'B. DESC only', 'C. SHOW TABLES', 'D. SHOW STATUS'], a: 'A。看 key_name/columns/cardinality（区分度参考）。', g: ['基础'] },
+  { to: 'mysql', t: 'C', d: 2, q: '读多写少、允许秒级延迟的报表需求，方案？', o: ['A. 读写分离走从库（专设报表从库）', 'B. 主库直跑', 'C. 全量导出txt', 'D. 停机跑'], a: 'A。隔离重查询，防打爆主库；更大规模再上数仓/ClickHouse。', g: ['架构'] },
+  { to: 'mysql', t: 'QA', d: 2, q: '为什么主从架构下写后立刻读可能读到旧数据？怎么处理？', a: '异步复制延迟所致。方案：1) 关键写后读强制走主库（路由标记）2) 会话内写读绑定（事务内走主）3) 半同步降低概率 4) 前端展示容忍（提交后刷新按钮）。理解"你读的是哪个一致性版本"。', g: ['架构', '高频'] },
+  { to: 'mysql', t: 'QA', d: 3, q: '订单库要停机迁移到新集群（新版本），设计迁移方案。', a: '1. 双写期：新旧双写（旧为准），对账任务校验\n2. 存量迁移：分批导入+核对（行数/抽样）\n3. 追平延迟：双写持续至延迟≈0\n4. 切读：按比例灰度读新库\n5. 切写：低峰单向切换（保留快速回切开关）\n6. 观察期后下线双写\n本质：**可灰度、可对账、可回退**。', g: ['架构', '必考'] },
+  // mw
+  { to: 'mw', t: 'C', d: 1, q: 'Redis set 与 zset 都能去重，什么场景必须 zset？', o: ['A. 需要按分数排序/范围取（排行榜、延迟队列）', 'B. 都一样', 'C. set更快必用', 'D. zset省内存'], a: 'A。ZRANGE/ZRANGEBYSCORE 是 set 没有的能力。', g: ['Redis'] },
+  { to: 'mw', t: 'C', d: 2, q: 'Redis 主从复制断开重连后走全量还是增量？', o: ['A. 断太久/offet不可用则全量（PSYNC降级）', 'B. 永远增量', 'C. 永远全量', 'D. 手动选择'], a: 'A。大实例频繁全量同步=复制风暴（网络抖动+diskless调优话题）。', g: ['Redis', '进阶'] },
+  { to: 'mw', t: 'QA', d: 2, q: 'Kafka 消息 key 设计的原则？', a: '1. 需要顺序的实体做 key（订单ID）——同 key 同分区有序\n2. key 分布要均匀（防数据倾斜热点分区）\n3. key 数量级稳定（避免极高基数）\n4. 无顺序需求可空 key（轮询打匀）\nkey 一旦定下变更要评估重分区影响。', g: ['Kafka', '实战'] },
+  { to: 'mw', t: 'QA', d: 3, q: '缓存与 DB 双写一致性：为什么"先删缓存再更新库"也有问题？', a: '删后、库更新前，并发读把**旧值**又填回缓存（脏数据长存）。\n所以主流是"先更新库再删缓存"（不一致窗口极小）+ 过期兜底；强一致要求加 binlog 订阅删除（canal）或分布式锁串行化。能讲出并发时序图即优秀。', g: ['缓存', '必考'] },
+  { to: 'mw', t: 'QA', d: 3, q: 'Redis Cluster 执行 mget 跨槽报错，除了 hash tag 还有方案？', a: '1. 客户端按 slot 分组并行请求再合并（主流 SDK 内置，如 lettuce/redisson）\n2. 业务侧并行单 get（CompletableFuture）\n3. 数据建模避免大 mget（按业务聚合为 hash）\nhash tag 适合强关联 key；无关联的批量读用客户端分组。', g: ['Redis', '进阶'] },
+  { to: 'mw', t: 'QA', d: 3, q: 'MQ 消费端想"暂停一小时消费"（下游故障），怎么做最稳？', a: '1. 消费组暂停（Kafka pause()/RocketMQ 挂起消费者）——消息留在 broker\n2. 不要直接 kill 消费者（可能触发重平衡乱象）\n3. 恢复前评估 lag 与下游承受力，逐步放量\n4. 若 broker 也扛不住堆积：转储 topic\n配合 lag 告警窗口放大，防恢复瞬间打爆下游。', g: ['MQ', '实战'] },
+
+  { to: 'linux', t: 'C', d: 1, q: '查看系统已开机多久？', o: ['A. uptime', 'B. time', 'C. date', 'D. clock'], a: 'A。load average 一起输出。', g: ['基础'] },
+  { to: 'linux', t: 'C', d: 2, q: 'nohup 忽略的信号是？', o: ['A. SIGHUP', 'B. SIGKILL', 'C. SIGINT', 'D. SIGTERM'], a: 'A。挂断信号（终端关闭时发）。', g: ['进程'] },
+  { to: 'linux', t: 'QA', d: 2, q: '快速对比两台机器目录结构差异？', a: '```bash\n# 各自执行\ncd /etc/nginx && find . | sort > /tmp/tree.txt\n# 拉到一起\ndiff a-tree.txt b-tree.txt\n```\n内容级对比再上 rsync -ncv 或 md5 清单。', g: ['实战'] },
+  { to: 'network', t: 'C', d: 1, q: 'HTTPS 默认端口？', o: ['A. 443', 'B. 80', 'C. 8443', 'D. 8080'], a: 'A。必背端口组：80/443/22/3306/6379。', g: ['必背'] },
+  { to: 'network', t: 'QA', d: 2, q: 'ping 显示的 time 是什么耗时？', a: 'ICMP 回显往返时延（RTT）：本机→目标→本机。局域网 <1ms，跨城 20-40ms，跨国 150ms+。是链路质量的粗粒度信号（不含应用处理）。', g: ['基础'] },
+  { to: 'shell', t: 'C', d: 1, q: '输出重定向覆盖文件并显示内容用？', o: ['A. cmd | tee file', 'B. cmd > file only', 'C. cmd 2>&1', 'D. cat cmd'], a: 'A。tee 双写；追加 -a。', g: ['基础'] },
+  { to: 'shell', t: 'QA', d: 2, q: '统计文件里某个单词出现总次数？', a: '```bash\ngrep -o "error" app.log | wc -l\n```\n-o 每次匹配单独一行输出再计数；-c 只数行数（一行多次算1）。', g: ['实战'] },
+  { to: 'nginx', t: 'C', d: 1, q: 'Nginx reload 的信号机制？', o: ['A. master 收 HUP 重新加载配置并平滑换 worker', 'B. 重启进程', 'C. KILL worker', 'D. 客户端断连'], a: 'A。nginx -s reload 即发 HUP。', g: ['原理'] },
+  { to: 'nginx', t: 'QA', d: 2, q: '如何只对 POST 请求做特殊处理（Nginx）？', a: '```nginx\nif ($request_method = POST) { ... }\n```\nif 内只能做有限动作（return/rewrite）；复杂逻辑交给应用或 map+变量。记住"if is evil"慎用原则。', g: ['配置', '进阶'] },
+  { to: 'docker', t: 'C', d: 1, q: '查看容器 IP 的最快方式？', o: ['A. docker inspect -f "{{.NetworkSettings.IPAddress}}" x', 'B. docker ip x', 'C. ifconfig', 'D. ping容器名'], a: 'A。或进容器 ip a；compose 网络内直接用服务名。', g: ['命令'] },
+  { to: 'docker', t: 'QA', d: 2, q: '容器一启动就退出且 logs 为空，从哪查起？', a: '1. inspect 看 ExitCode 与 Error（可能命令不存在/权限）\n2. --entrypoint sh 手动进去跑原命令复现\n3. 镜像架构不匹配（exec format error → ARM/x86）\n4. 磁盘/配额\n"logs空≠没原因"，inspect 是第二现场。', g: ['排障'] },
+  { to: 'k8s', t: 'C', d: 1, q: 'kubectl set image deploy api api=img:v2 的作用？', o: ['A. 滚动更新镜像', 'B. 只改配置不发布', 'C. 重启', 'D. 扩容'], a: 'A。触发滚动发布；rollout status 观察进度。', g: ['发布'] },
+  { to: 'k8s', t: 'QA', d: 2, q: '如何查 Pod 被调度到的节点与 IP？', a: '```bash\nkubectl get pod x -o wide\n# 或\nkubectl get pod x -o custom-columns=NODE:.spec.nodeName,IP:.status.podIP\n```\n登录该节点可 docker/ctr 看到对应容器。', g: ['命令'] },
+  { to: 'monitor', t: 'C', d: 1, q: 'PromQL 中 [5m] 表示？', o: ['A. 回看5分钟窗口', 'B. 未来5分钟', 'C. 每5分钟', 'D. 延迟5分'], a: 'A。range selector，配合 rate/increase 使用。', g: ['PromQL', '必背'] },
+  { to: 'mysql', t: 'C', d: 1, q: '进入 mysql 客户端的命令？', o: ['A. mysql -uroot -p -h host', 'B. mysql connect', 'C. sql shell', 'D. db login'], a: 'A。-p 后不写密码（交互输入更安全）。', g: ['基础'] },
+  { to: 'mw', t: 'QA', d: 2, q: 'redis-cli --stat 的用途？', a: '滚动显示 keys/mem/hits/misses 概览——快速观察实例健康趋势（比反复 INFO 顺手）。配 --bigkeys 巡检更佳。', g: ['Redis'] },
+]

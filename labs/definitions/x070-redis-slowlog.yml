@@ -1,0 +1,39 @@
+code: redis-slowlog
+name: 慢查询定位
+topic: mw
+difficulty: 3
+sortOrder: 70
+tags: [redis]
+timeLimitMinutes: 40
+scenario: |
+  Redis 偶发卡顿，怀疑慢命令。
+  任务：启动 redis 后执行一条故意慢的命令（KEYS *），然后查看 SLOWLOG GET 把结果写入 /root/slow.txt（文件应包含 KEYS）。
+setup: |
+  pkill -x redis-server 2>/dev/null; sleep 1
+  cat > /etc/redis/redis.conf <<EOF
+  bind 127.0.0.1
+  port 6379
+  daemonize yes
+  slowlog-log-slower-than 0
+  logfile /var/log/redis/redis.log
+  dir /var/lib/redis
+  EOF
+  mkdir -p /var/log/redis /var/lib/redis
+  for i in $(seq 1 200); do echo "k$i v" ; done | while read k v; do :; done
+  true
+check: |
+  if grep -q "KEYS" /root/slow.txt 2>/dev/null; then
+    echo '{"pass":true,"score":100,"message":"完成！慢命令证据留存"}'
+  else
+    echo '{"pass":false,"score":0,"message":"先造点数据再 KEYS *，SLOWLOG GET 落盘"}'
+  fi
+hints:
+  - 启动 redis（slowlog 阈值已设 0 全记录）
+  - 写入几十个 key 再执行 KEYS *
+  - redis-cli SLOWLOG GET > /root/slow.txt
+solution: |
+  redis-server /etc/redis/redis.conf; sleep 1
+  for i in $(seq 1 50); do redis-cli set k$i v >/dev/null; done
+  redis-cli KEYS "*" >/dev/null
+  redis-cli SLOWLOG GET > /root/slow.txt
+  head -5 /root/slow.txt

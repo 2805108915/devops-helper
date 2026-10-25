@@ -1,0 +1,33 @@
+code: find-by-name
+name: 按名称清理指定文件
+topic: linux
+difficulty: 1
+sortOrder: 12
+tags: [find]
+timeLimitMinutes: 30
+scenario: |
+  磁盘告急。/data 下有大量 .tmp 和 .bak 临时文件需要清理。
+  任务：删除 /data 下所有 .tmp 与 .bak 文件（含子目录），保留其他文件。
+setup: |
+  mkdir -p /data/a/b/c
+  echo x > /data/a/1.tmp; echo x > /data/a/2.bak
+  echo x > /data/a/b/3.tmp
+  echo x > /data/a/b/c/4.bak
+  echo keep > /data/a/b/keep.txt
+  echo keep > /data/keep.conf
+check: |
+  n=$(find /data -name "*.tmp" -o -name "*.bak" | wc -l)
+  k=$(find /data -name "keep*" | wc -l)
+  if [ "$n" -eq 0 ] && [ "$k" -eq 2 ]; then
+    echo '{"pass":true,"score":100,"message":"完成！临时文件清理干净，正式文件保留"}'
+  else
+    echo '{"pass":false,"score":0,"message":"还剩 '$n' 个临时文件，保留文件数 '$k'/2"}'
+  fi
+hints:
+  - find /data -name "*.tmp"
+  - 两种后缀用 -o 组合：-name "*.tmp" -o -name "*.bak"
+  - 删除加 -delete 或 xargs rm
+solution: |
+  find /data \( -name "*.tmp" -o -name "*.bak" \) -print
+  find /data \( -name "*.tmp" -o -name "*.bak" \) -delete
+  find /data -type f | wc -l

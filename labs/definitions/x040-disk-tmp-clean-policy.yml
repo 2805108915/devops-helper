@@ -1,0 +1,33 @@
+code: disk-tmp-clean-policy
+name: 临时目录清理策略落地
+topic: linux
+difficulty: 2
+sortOrder: 40
+tags: [find, tmp]
+timeLimitMinutes: 30
+scenario: |
+  /tmp 塞满了 48 小时前的旧会话文件。
+  任务：删除 /tmp 下修改时间超过 2 天的 sess_* 文件，保留新文件与无关文件。
+setup: |
+  mkdir -p /tmp
+  echo a > /tmp/sess_001; touch -d "3 days ago" /tmp/sess_001
+  echo b > /tmp/sess_002; touch -d "5 days ago" /tmp/sess_002
+  echo c > /tmp/sess_003
+  echo keep > /tmp/build.cache
+check: |
+  old=$(find /tmp -name "sess_*" -mtime +2 | wc -l)
+  new=$(ls /tmp/sess_003 2>/dev/null | wc -l)
+  c=$(ls /tmp/build.cache 2>/dev/null | wc -l)
+  if [ "$old" = "0" ] && [ "$new" = "1" ] && [ "$c" = "1" ]; then
+    echo '{"pass":true,"score":100,"message":"完成！策略精准执行"}'
+  else
+    echo '{"pass":false,"score":0,"message":"旧 sess 没清干净或误删了新文件"}'
+  fi
+hints:
+  - 2天前：-mtime +2
+  - 只匹配 sess_*
+  - 先预览再删
+solution: |
+  find /tmp -name "sess_*" -mtime +2 -ls
+  find /tmp -name "sess_*" -mtime +2 -delete
+  ls -la /tmp

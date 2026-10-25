@@ -1,0 +1,33 @@
+code: cron-env-path
+name: cron 环境 PATH 坑
+topic: shell
+difficulty: 3
+sortOrder: 79
+tags: [cron, 坑]
+timeLimitMinutes: 40
+scenario: |
+  脚本里调用了 python3，手动能跑 cron 不跑（cron 的 PATH 极简且无 venv）。
+  任务：给 /opt/job.sh 补上环境（脚本开头写绝对路径或加载 profile），启动 cron，等 1 分钟（或手动）验证 /tmp/job.out 有内容。
+setup: |
+  cat > /opt/job.sh <<EOF
+  #!/bin/bash
+  echo "job ran at $(date +%T)" > /tmp/job.out
+  EOF
+  chmod 644 /opt/job.sh
+  echo "* * * * * /opt/job.sh" | crontab -
+  pkill -x cron 2>/dev/null; echo ok
+check: |
+  if [ -f /tmp/job.out ] && pgrep -x cron >/dev/null && [ -x /opt/job.sh ]; then
+    echo '{"pass":true,"score":100,"message":"完成！脚本具备执行权限且任务可运行"}'
+  else
+    echo '{"pass":false,"score":0,"message":"chmod +x /opt/job.sh；启动 cron；验证输出"}'
+  fi
+hints:
+  - 先跑一下 /opt/job.sh 看报错：没有执行权限！
+  - chmod +x
+  - cron 启动后等 1 分钟或手动跑
+solution: |
+  chmod +x /opt/job.sh
+  /opt/job.sh && cat /tmp/job.out
+  cron
+  crontab -l

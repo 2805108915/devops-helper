@@ -1,0 +1,28 @@
+code: net-listen-all
+name: 服务只监听了 127.0.0.1
+topic: network
+difficulty: 2
+sortOrder: 48
+tags: [监听]
+timeLimitMinutes: 30
+scenario: |
+  容器内 web 服务只有本机能访问。
+  任务：发现 python 服务只绑了 127.0.0.1:9000。终止它并用绑 0.0.0.0 的方式重启（python3 -m http.server 9000 --directory /tmp --bind 0.0.0.0），使 ss 显示 0.0.0.0:9000 监听。
+setup: |
+  setsid python3 -m http.server 9000 --directory /tmp --bind 127.0.0.1 >/dev/null 2>&1 < /dev/null &
+  sleep 1
+check: |
+  if ss -tln | grep ":9000" | grep -q "0.0.0.0:9000"; then
+    echo '{"pass":true,"score":100,"message":"完成！全网卡监听"}'
+  else
+    echo '{"pass":false,"score":0,"message":"当前仍非 0.0.0.0 监听（ss -tln | grep 9000）"}'
+  fi
+hints:
+  - 诊断：ss -tln | grep 9000 看绑定地址
+  - 杀旧：kill PID
+  - 重启加 --bind 0.0.0.0 并后台化
+solution: |
+  ss -tlnp | grep 9000
+  kill $(ss -tlnp | grep :9000 | grep -oP "pid=\K[0-9]+" | head -1)
+  nohup python3 -m http.server 9000 --directory /tmp --bind 0.0.0.0 >/dev/null 2>&1 &
+  ss -tln | grep 9000

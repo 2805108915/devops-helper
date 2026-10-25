@@ -1,0 +1,31 @@
+code: nginx-bad-semi
+name: Nginx 缺分号起不来
+topic: nginx
+difficulty: 1
+sortOrder: 56
+tags: [语法]
+timeLimitMinutes: 30
+scenario: |
+  改配置手滑删了个分号，nginx 起不来了。
+  任务：用 nginx -t 定位行号修复，启动 nginx，使 curl 127.0.0.1 返回 200。
+setup: |
+  cp /etc/nginx/nginx.conf /etc/nginx/nginx.conf.bak
+  sed -i "s/worker_processes auto;/worker_processes auto/" /etc/nginx/nginx.conf
+  sed -i "/worker_processes auto/a \ \ bad_without_semi on" /etc/nginx/nginx.conf
+  pkill -x nginx 2>/dev/null || true
+check: |
+  code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 3 http://127.0.0.1/ 2>/dev/null)
+  if pgrep -x nginx >/dev/null && [ "$code" = "200" ]; then
+    echo '{"pass":true,"score":100,"message":"完成！语法修复服务恢复"}'
+  else
+    echo '{"pass":false,"score":0,"message":"nginx -t 看报错行，删掉坏行后启动"}'
+  fi
+hints:
+  - nginx -t 会给出坏行号
+  - sed -i "Nd" 删行（N=行号）或 vi 修改
+  - 修好 nginx -t 通过后直接 nginx 启动
+solution: |
+  nginx -t
+  # 删除提示的坏行（例如第7行）：sed -i "7d" /etc/nginx/nginx.conf
+  nginx -t && nginx
+  curl -s -o /dev/null -w "%{http_code}\n" http://127.0.0.1/

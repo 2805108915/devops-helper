@@ -1,0 +1,43 @@
+code: nginx-custom-error
+name: 自定义 502 页面
+topic: nginx
+difficulty: 2
+sortOrder: 64
+tags: [运维体验]
+timeLimitMinutes: 30
+scenario: |
+  后端维护时网关 502 太丑，要换成友好提示页。
+  任务：配置自定义 502 页面（/var/www/err/502.html，内容含 MAINTENANCE），使访问 /api/（反代到不存在的 9000 端口）返回页面含 MAINTENANCE。
+setup: |
+  mkdir -p /var/www/err; echo "<h1>MAINTENANCE</h1>" > /var/www/err/502.html
+  cat > /etc/nginx/sites-available/err <<EOF
+  server {
+      listen 80;
+      location /api/ {
+          proxy_pass http://127.0.0.1:9000/;
+      }
+  }
+  EOF
+  ln -sf /etc/nginx/sites-available/err /etc/nginx/sites-enabled/err
+  rm -f /etc/nginx/sites-enabled/default
+  nginx 2>/dev/null || nginx -s reload 2>/dev/null || true
+check: |
+  out=$(curl -s --max-time 3 http://127.0.0.1/api/x 2>/dev/null)
+  if echo "$out" | grep -q MAINTENANCE; then
+    echo '{"pass":true,"score":100,"message":"完成！友好降级页生效"}'
+  else
+    echo '{"pass":false,"score":0,"message":"error_page 502 /502.html; + location = /502.html 指向页面"}'
+  fi
+hints:
+  - server{} 里 error_page 502 /502.html;
+  - location = /502.html { root /var/www/err; internal; }
+  - reload 验证
+solution: |
+  cat >> /etc/nginx/sites-available/err <<EOF
+  EOF
+  # 在 server{} 中加入：
+  # error_page 502 /502.html;
+  # location = /502.html { root /var/www/err; internal; }
+  vi /etc/nginx/sites-available/err
+  nginx -t && nginx -s reload
+  curl -s http://127.0.0.1/api/x

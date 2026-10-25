@@ -1,0 +1,33 @@
+code: text-csv-report
+name: CSV 报表统计
+topic: shell
+difficulty: 2
+sortOrder: 43
+tags: [awk]
+timeLimitMinutes: 30
+scenario: |
+  /data/sales.csv 格式：日期,城市,金额。
+  任务：统计总金额写入 /root/total.txt（纯数字）。
+setup: |
+  mkdir -p /data
+  cat > /data/sales.csv <<EOF
+  2026-10-01,bj,1200
+  2026-10-02,sh,3400
+  2026-10-03,bj,800
+  2026-10-04,gz,2600
+  EOF
+check: |
+  t=$(grep -oE "[0-9]+" /root/total.txt 2>/dev/null | head -1)
+  if [ "$t" = "8000" ]; then
+    echo '{"pass":true,"score":100,"message":"完成！合计正确"}'
+  else
+    echo '{"pass":false,"score":0,"message":"总金额应为 8000（awk -F, 求和第3列）"}'
+  fi
+hints:
+  - 分隔符：awk -F, 
+  - 求和：awk -F, '{s+=$3} END{print s}'
+  - 写入文件
+solution: |
+  awk -F, '{s+=$3} END{print s}' /data/sales.csv
+  awk -F, '{s+=$3} END{print s}' /data/sales.csv > /root/total.txt
+  cat /root/total.txt

@@ -1,0 +1,25 @@
+code: shell-parallel-xargs
+name: 并行批量探活（xargs -P）
+topic: shell
+difficulty: 3
+sortOrder: 88
+tags: [并发]
+timeLimitMinutes: 40
+scenario: |
+  要对 /opt/hosts.txt 的每行地址做连通测试（ping -c1 -W1），并行 10 路。
+  任务：运行批量探测，把每行结果 "IP OK/FAIL" 写入 /root/pingall.txt。
+setup: |
+  printf "127.0.0.1\n127.0.0.2\n127.0.0.3\n" > /opt/hosts.txt
+check: |
+  if [ -f /root/pingall.txt ] && grep -q "127.0.0.1" /root/pingall.txt && [ "$(wc -l < /root/pingall.txt)" -ge 3 ]; then
+    echo '{"pass":true,"score":100,"message":"完成！并行探测完成"}'
+  else
+    echo '{"pass":false,"score":0,"message":"xargs -P 10 -I {} sh -c "ping..." 或 for 循环"}'
+  fi
+hints:
+  - xargs -P 10 -I{} sh -c '...{}...' < 文件
+  - 结果 echo 追加文件
+  - wc -l 验证
+solution: |
+  cat /opt/hosts.txt | xargs -P 10 -I{} sh -c 'ping -c1 -W1 {} >/dev/null 2>&1 && echo "{} OK" || echo "{} FAIL"' > /root/pingall.txt
+  cat /root/pingall.txt

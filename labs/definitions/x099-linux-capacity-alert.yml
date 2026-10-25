@@ -1,0 +1,29 @@
+code: linux-capacity-alert
+name: 磁盘水位告警脚本
+topic: shell
+difficulty: 2
+sortOrder: 99
+tags: [实战]
+timeLimitMinutes: 40
+scenario: |
+  写 /opt/diskalert.sh：当根分区使用率超过阈值（设 5%，便于实验）时向 /tmp/disk.alert 写入告警行（含 USE% 与时间）；立即执行一次验证。
+setup: |
+  echo ok
+check: |
+  if [ -x /opt/diskalert.sh ] && grep -qE "USE|%" /tmp/disk.alert 2>/dev/null; then
+    echo '{"pass":true,"score":100,"message":"完成！水位告警可用"}'
+  else
+    echo '{"pass":false,"score":0,"message":"df -P / 取百分比与5比较，超阈值写 /tmp/disk.alert"}'
+  fi
+hints:
+  - df -P / 输出稳定格式（第5列 xx%）
+  - 取百分比：df -P / 后取第5列并去掉百分号（awk 的 gsub）
+  - 比较大于5则追加一行到 /tmp/disk.alert
+solution: |
+  cat > /opt/diskalert.sh <<EOF
+  #!/bin/bash
+  p=\$(df -P / | awk "NR==2{gsub(\\"%\",\"\");print \$5}")
+  [ "\$p" -gt 5 ] && echo "\$(date +%F\ %T) disk USE \${p}% over threshold" >> /tmp/disk.alert
+  EOF
+  chmod +x /opt/diskalert.sh && /opt/diskalert.sh
+  cat /tmp/disk.alert

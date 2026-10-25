@@ -1,0 +1,35 @@
+code: nginx-upstream-lb
+name: 配置双后端负载均衡
+topic: nginx
+difficulty: 2
+sortOrder: 60
+tags: [负载均衡]
+timeLimitMinutes: 40
+scenario: |
+  两台后端 9001/9002 已运行（页面分别输出 BK1/BK2）。Nginx 还没配置。
+  任务：配置 nginx 在 80 端口负载均衡转发到两台后端（轮询），多次 curl 应能出现两种输出。
+setup: |
+  mkdir -p /opt/bk1 /opt/bk2; echo "BK1" > /opt/bk1/index.html; echo "BK2" > /opt/bk2/index.html
+  nohup python3 -m http.server 9001 --directory /opt/bk1 --bind 127.0.0.1 >/dev/null 2>&1 &
+  nohup python3 -m http.server 9002 --directory /opt/bk2 --bind 127.0.0.1 >/dev/null 2>&1 &
+  rm -f /etc/nginx/sites-enabled/*
+  sleep 1
+check: |
+  r=$(for i in 1 2 3 4; do curl -s --max-time 3 http://127.0.0.1/ 2>/dev/null; done | sort -u | wc -l)
+  if [ "$r" -ge 2 ]; then
+    echo '{"pass":true,"score":100,"message":"完成！轮询负载均衡生效"}'
+  else
+    echo '{"pass":false,"score":0,"message":"upstream 两台 + location / 转发 + reload"}'
+  fi
+hints:
+  - http{} 加 upstream bks { server 127.0.0.1:9001; server 127.0.0.1:9002; }
+  - server{} 的 location / { proxy_pass http://bks; }
+  - nginx -t && nginx -s reload
+solution: |
+  cat >> /etc/nginx/nginx.conf.bak /dev/null 2>&1 || true
+  # 在 nginx.conf http{} 内追加：
+  # upstream bks { server 127.0.0.1:9001; server 127.0.0.1:9002; }
+  # server { listen 80; location / { proxy_pass http://bks; } }
+  vi /etc/nginx/nginx.conf
+  nginx -t && nginx -s reload
+  for i in 1 2 3 4; do curl -s http://127.0.0.1/; done

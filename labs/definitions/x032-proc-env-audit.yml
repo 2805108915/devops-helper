@@ -1,0 +1,28 @@
+code: proc-env-audit
+name: 进程环境变量取证
+topic: linux
+difficulty: 2
+sortOrder: 32
+tags: [proc]
+timeLimitMinutes: 30
+scenario: |
+  怀疑某个进程的环境变量配置错了（连错数据库）。
+  任务：找到运行中的 envapp 进程，查看其环境变量，把其中的 DB_HOST 值写入 /root/dbhost.txt。
+setup: |
+  setsid env DB_HOST=10.0.0.99 DB_PORT=3306 APP_MODE=prod sh -c 'exec -a envapp sleep 600' >/dev/null 2>&1 < /dev/null &
+  sleep 1
+check: |
+  if grep -q "10.0.0.99" /root/dbhost.txt 2>/dev/null; then
+    echo '{"pass":true,"score":100,"message":"完成！取证正确"}'
+  else
+    echo '{"pass":false,"score":0,"message":"提示：/proc/<pid>/environ，tr '\\0' '\\n' 后 grep"}'
+  fi
+hints:
+  - 找 pid：pgrep -f envapp
+  - 环境变量在 /proc/<pid>/environ（NUL分隔）
+  - tr '\0' '\n' < /proc/PID/environ | grep DB_HOST
+solution: |
+  PID=$(pgrep -f envapp | head -1)
+  tr '\0' '\n' < /proc/$PID/environ
+  grep DB_HOST= /proc/$PID/environ | tr '\0' '\n' | grep -o '10.0.0.99' > /root/dbhost.txt
+  cat /root/dbhost.txt

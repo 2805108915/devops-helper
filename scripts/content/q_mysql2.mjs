@@ -1,0 +1,20 @@
+// MySQL 补充题
+export const Q = [
+  { t: 'C', d: 1, q: 'InnoDB 与 MyISAM 的关键差异？', o: ['A. 事务/行锁/崩溃恢复：InnoDB 有，MyISAM 无', 'B. MyISAM更快必用', 'C. 都支持事务', 'D. 无差异'], a: 'A。8.0 已移除 MyISAM 系统表。InnoDB 聚簇索引+MVCC。', g: ['基础'] },
+  { t: 'C', d: 1, q: '自增主键的好处（InnoDB）？', o: ['A. 顺序插入不页分裂、主键最短', 'B. 随机分布均匀', 'C. 无好处', 'D. 仅规范'], a: 'A。UUID 做主键→随机写页分裂+索引膨胀（可用有序UUID方案）。', g: ['基础'] },
+  { t: 'C', d: 1, q: 'varchar(50) 与 char(50)？', o: ['A. varchar 变长省空间；char 定长补空格', 'B. 相同', 'C. char省', 'D. 都变长'], a: 'A。定长短字段（国家码）char，其余 varchar。', g: ['基础'] },
+  { t: 'C', d: 2, q: '联合索引 (a,b,c) 对哪些查询有效？', o: ['A. a / a,b / a,b,c 与最左前缀范围', 'B. 任意组合', 'C. 只有a,b,c', 'D. b,c也全用'], a: 'A。b 或 c 单独查用不上；a 范围后 b,c 失效（范围之后断前缀）。', g: ['索引', '必考'] },
+  { t: 'C', d: 2, q: 'EXPLAIN rows=200万 type=ref 说明？', o: ['A. 走了非唯一索引但预估扫200万行——索引选择性差', 'B. 很好', 'C. 全表扫', 'D. 主键查询'], a: 'A。加/改索引或改写；区分度低的列单列索引价值小（可考虑联合）。', g: ['优化'] },
+  { t: 'C', d: 2, q: 'binlog 的三大用途？', o: ['A. 复制/时间点恢复/CDC(canal)', 'B. 仅恢复', 'C. 审计 only', 'D. 性能'], a: 'A。ROW 格式是 CDC 生态基础。', g: ['复制'] },
+  { t: 'C', d: 2, q: '半同步复制（semi-sync）的意义？', o: ['A. 至少一个从库收到binlog才回客户端（降低丢失）', 'B. 性能更高', 'C. 全同步', 'D. 免运维'], a: 'A。超时可退化为异步（rpl_semi_sync_master_timeout）。', g: ['复制', '进阶'] },
+  { t: 'C', d: 2, q: 'GTID 复制的最大好处？', o: ['A. 全局事务号自动定位位点，failover 简单安全', 'B. 更快', 'C. 免备份', 'D. 无需主键'], a: 'A。CHANGE REPLICATION SOURCE ... SOURCE_AUTO_POSITION=1。', g: ['复制'] },
+  { t: 'C', d: 2, q: 'innodb_buffer_pool_size 经验值？', o: ['A. 专机DB物理内存的60-70%', 'B. 越大越好100%', 'C. 固定4G', 'D. 1G'], a: 'A。留内存给连接/排序/OS页缓存。最重要参数没有之一。', g: ['调优', '必背'] },
+  { t: 'C', d: 2, q: '读已提交(RC)下还有间隙锁吗？', o: ['A. 基本没有（仅外键/唯一检查等场景）', 'B. 和RR一样', 'C. 更多', 'D. 完全没有锁'], a: 'A。互联网改RC减少锁冲突与死锁的原理。', g: ['锁', '进阶'] },
+  { t: 'C', d: 2, q: 'information_schema 与 performance_schema 的分工？', o: ['A. 元数据/运行时性能统计（等待、锁、内存）', 'B. 相同', 'C. 都是日志', 'D. 一个读一个写'], a: 'A。排障常查：processlist、innodb_trx、data_locks、events_waits。', g: ['运维'] },
+  { t: 'C', d: 2, q: 'SELECT ... FOR UPDATE 的作用？', o: ['A. 悲观行锁（写冲突高时保正确性）', 'B. 只读锁', 'C. 加速', 'D. 提示优化器'], a: 'A。热点行扣减库存类场景；配合事务小粒度防死锁。', g: ['锁'] },
+  { t: 'C', d: 3, q: 'redo log 写满会发生什么？', o: ['A. 触发 checkpoint 强制刷脏页，业务写入被压制', 'B. 自动扩容', 'C. 数据丢失', 'D. 无影响'], a: 'A。写陡增+buffer pool 小时易现（log file 大小按业务调）。', g: ['原理', '进阶'] },
+  { t: 'C', d: 3, q: 'change buffer / double write 的作用？', o: ['A. 二级索引写优化 / 防页写断裂（部分写失败损坏）', 'B. 都加速读', 'C. 备份机制', 'D. 无用'], a: 'A。说出 double write 防半页损坏是深度信号。', g: ['原理', '进阶'] },
+  { t: 'QA', d: 2, q: 'show processlist 里大量 "Waiting for table metadata lock" 是什么事故？', a: 'DDL 等待未提交事务的 MDL 锁，同时阻塞后续所有该表查询（雪崩）。\n处置：1) kill 卡住的 DDL 解除排队 2) 查 information_schema.innodb_trx 找长事务 kill 3) DDL 前先查长事务。\n预防：低峰 DDL、pt-osc。', g: ['排障', '高频'] },
+  { t: 'QA', d: 2, q: '如何安全清理 binlog？', a: '```sql\nPURGE BINARY LOGS BEFORE NOW() - INTERVAL 7 DAY;\n```\n先确认从库已消费（SHOW REPLICA STATUS 的 Executed_Gtid_Set）；自动策略：binlog_expire_logs_seconds。磁盘告警的第一嫌疑。', g: ['运维'] },
+  { t: 'QA', d: 3, q: '单表 2 亿行需要分库分表吗？先做什么？', a: '先灵魂三问：慢吗（慢SQL治理）、写多大（QPS/单机容量）、业务增长曲线。\n多数场景：好索引+读写分离+归档冷数据可支撑到千万级以上。\n真到瓶颈：按业务分片（订单按 user_id hash），中间件 ShardingSphere/MyCat，同时接受跨片查询/分布式事务复杂度。\n"先优化后拆分"，反问需求是加分项。', g: ['架构', '高频'] },
+]

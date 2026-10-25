@@ -1,0 +1,29 @@
+code: disk-dir-size-map
+name: 目录容量地图
+topic: linux
+difficulty: 1
+sortOrder: 36
+tags: [du]
+timeLimitMinutes: 30
+scenario: |
+  盘要满了，需要容量画像给老板看。
+  任务：统计 /data 一级子目录大小，按从大到小写入 /root/size-report.txt（每行："大小MB 目录名"）。
+setup: |
+  mkdir -p /data/logs /data/media /data/db
+  dd if=/dev/zero of=/data/logs/a.log bs=1M count=30 status=none
+  dd if=/dev/zero of=/data/media/v.mp4 bs=1M count=60 status=none
+  dd if=/dev/zero of=/data/db/d.dat bs=1M count=15 status=none
+check: |
+  if [ -f /root/size-report.txt ] && head -1 /root/size-report.txt | grep -q "media" && [ "$(wc -l < /root/size-report.txt)" -ge 3 ]; then
+    echo '{"pass":true,"score":100,"message":"完成！容量画像生成"}'
+  else
+    echo '{"pass":false,"score":0,"message":"首行应为最大的 media，共至少3行（du -sm /data/* | sort -rn）"}'
+  fi
+hints:
+  - du -sm /data/* 单位MB
+  - sort -rn 降序
+  - 重定向到报告文件
+solution: |
+  du -sm /data/* | sort -rn
+  du -sm /data/* | sort -rn > /root/size-report.txt
+  cat /root/size-report.txt

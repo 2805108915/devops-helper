@@ -1,0 +1,27 @@
+code: proc-find-by-port
+name: 谁占用了我的端口
+topic: linux
+difficulty: 1
+sortOrder: 34
+tags: [ss, 端口]
+timeLimitMinutes: 20
+scenario: |
+  要启动的服务绑不上 8081 端口（被占）。
+  任务：找出占用 8081 的进程并终止它。
+setup: |
+  setsid python3 -m http.server 8081 --directory /tmp >/dev/null 2>&1 < /dev/null &
+  sleep 1
+check: |
+  if ! ss -tln | grep -q ":8081 "; then
+    echo '{"pass":true,"score":100,"message":"完成！端口已释放"}'
+  else
+    echo '{"pass":false,"score":0,"message":"8081 仍被占用（ss -tlnp | grep 8081）"}'
+  fi
+hints:
+  - ss -tlnp | grep 8081 拿 PID
+  - kill <pid>
+  - 验证端口空出
+solution: |
+  ss -tlnp | grep 8081
+  kill $(ss -tlnp | grep :8081 | grep -oP "pid=\K[0-9]+" | head -1)
+  ss -tln | grep 8081 || echo FREE

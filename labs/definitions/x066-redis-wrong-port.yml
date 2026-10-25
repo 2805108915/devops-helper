@@ -1,0 +1,35 @@
+code: redis-wrong-port
+name: Redis 端口配错
+topic: mw
+difficulty: 2
+sortOrder: 66
+tags: [redis]
+timeLimitMinutes: 40
+scenario: |
+  应用连 6379 报拒绝。发现配置文件端口写错。
+  任务：修正 /etc/redis/redis.conf 的 port 为 6379 并启动 redis-server，使 redis-cli ping 返回 PONG。
+setup: |
+  cat > /etc/redis/redis.conf <<EOF
+  bind 127.0.0.1
+  port 6390
+  daemonize yes
+  logfile /var/log/redis/redis.log
+  dir /var/lib/redis
+  EOF
+  mkdir -p /var/log/redis /var/lib/redis
+check: |
+  pong=$(redis-cli -p 6379 ping 2>/dev/null)
+  if [ "$pong" = "PONG" ]; then
+    echo '{"pass":true,"score":100,"message":"完成！Redis 恢复"}'
+  else
+    echo '{"pass":false,"score":0,"message":"改 port 6379 后 redis-server /etc/redis/redis.conf"}'
+  fi
+hints:
+  - 看配置：grep ^port /etc/redis/redis.conf
+  - 改成 6379
+  - redis-server /etc/redis/redis.conf 启动
+solution: |
+  sed -i "s/^port .*/port 6379/" /etc/redis/redis.conf
+  redis-server /etc/redis/redis.conf
+  sleep 1
+  redis-cli ping

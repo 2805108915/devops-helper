@@ -1,0 +1,29 @@
+code: proc-fd-leak
+name: 文件句柄泄漏排查
+topic: linux
+difficulty: 3
+sortOrder: 33
+tags: [lsof, ulimit]
+timeLimitMinutes: 40
+scenario: |
+  应用报 Too many open files。
+  任务：1) 查看 fdapp 进程打开了多少 fd（写入 /root/fdcount.txt） 2) 提高该进程用户的文件句柄限制说明文件位置（本题判分看 /root/fdcount.txt 内容为数字且 >100）。
+setup: |
+  setsid sh -c 'exec -a fdapp bash -c "for i in \$(seq 1 200); do eval "exec $i>/dev/null"; done; sleep 600"' >/dev/null 2>&1 < /dev/null &
+  sleep 1
+check: |
+  c=$(cat /root/fdcount.txt 2>/dev/null | grep -oE "^[0-9]+$" | head -1)
+  if [ -n "$c" ] && [ "$c" -ge 100 ]; then
+    echo '{"pass":true,"score":100,"message":"完成！fd 数量取证到位"}'
+  else
+    echo '{"pass":false,"score":0,"message":"统计该进程 fd 数（ls /proc/PID/fd | wc -l）写入 /root/fdcount.txt"}'
+  fi
+hints:
+  - 找 pid：pgrep -f fdapp
+  - 统计：ls /proc/PID/fd | wc -l（或 lsof -p PID）
+  - 永久调限：/etc/security/limits.conf 的 nofile
+solution: |
+  PID=$(pgrep -f fdapp | head -1)
+  ls /proc/$PID/fd | wc -l
+  ls /proc/$PID/fd | wc -l > /root/fdcount.txt
+  cat /root/fdcount.txt

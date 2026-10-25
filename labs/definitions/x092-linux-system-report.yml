@@ -1,0 +1,30 @@
+code: linux-system-report
+name: 巡检报告一键生成
+topic: shell
+difficulty: 2
+sortOrder: 92
+tags: [综合, 实战]
+timeLimitMinutes: 40
+scenario: |
+  写巡检脚本 /opt/check.sh 生成 /root/report.txt，包含：当前负载、内存可用、磁盘 / 使用率（三段都要有）。
+setup: |
+  echo ok
+check: |
+  r=$(grep -cE "load|内存|磁盘|Mem|Filesystem|/" /root/report.txt 2>/dev/null)
+  x=$(ls /opt/check.sh 2>/dev/null | wc -l)
+  if [ "$r" -ge 3 ] && [ "$x" = "1" ]; then
+    echo '{"pass":true,"score":100,"message":"完成！巡检脚本就绪"}'
+  else
+    echo '{"pass":false,"score":0,"message":"/opt/check.sh 输出 uptime/free -h/df -h 到 /root/report.txt"}'
+  fi
+hints:
+  - 脚本三段：uptime; free -h; df -h /
+  - 重定向 /root/report.txt
+  - chmod +x 并执行
+solution: |
+  cat > /opt/check.sh <<EOF
+  #!/bin/bash
+  { echo "== load =="; uptime; echo "== mem =="; free -h; echo "== disk =="; df -h /; } > /root/report.txt
+  EOF
+  chmod +x /opt/check.sh && /opt/check.sh
+  cat /root/report.txt

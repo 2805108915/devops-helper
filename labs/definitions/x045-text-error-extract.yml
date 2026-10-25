@@ -1,0 +1,28 @@
+code: text-error-extract
+name: 错误日志聚类
+topic: shell
+difficulty: 2
+sortOrder: 45
+tags: [grep, awk]
+timeLimitMinutes: 30
+scenario: |
+  上千行日志要快速知道有哪些异常类。
+  任务：提取 /var/log/app/app.log 中所有 ERROR 行的错误码（如 ERR-xxx）并去重计数，写入 /root/errors.txt（按次数降序）。
+setup: |
+  mkdir -p /var/log/app
+  for i in $(seq 1 20); do echo "INFO ok"; echo "ERROR ERR-1001 db timeout"; done > /var/log/app/app.log
+  for i in $(seq 1 8); do echo "ERROR ERR-2002 cache miss"; done >> /var/log/app/app.log
+  for i in $(seq 1 3); do echo "WARN slow"; echo "ERROR ERR-3003 null"; done >> /var/log/app/app.log
+check: |
+  if [ -f /root/errors.txt ] && head -1 /root/errors.txt | grep -q "ERR-1001" && [ "$(wc -l < /root/errors.txt)" -ge 3 ]; then
+    echo '{"pass":true,"score":100,"message":"完成！错误聚类正确"}'
+  else
+    echo '{"pass":false,"score":0,"message":"grep ERROR 取错误码 | sort | uniq -c | sort -rn"}'
+  fi
+hints:
+  - 过滤：grep ERROR
+  - 提取错误码：awk '{for(i=1;i<=NF;i++) if($i ~ /^ERR-/) print $i}' 或 grep -o
+  - uniq -c 计数排序
+solution: |
+  grep ERROR /var/log/app/app.log | grep -oE 'ERR-[0-9]+' | sort | uniq -c | sort -rn > /root/errors.txt
+  cat /root/errors.txt

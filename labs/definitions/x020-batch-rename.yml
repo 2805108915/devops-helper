@@ -1,0 +1,31 @@
+code: batch-rename
+name: 批量重命名（脚本实战）
+topic: linux
+difficulty: 2
+sortOrder: 20
+tags: [脚本]
+timeLimitMinutes: 30
+scenario: |
+  上传目录 /data/up 的 66 张图片文件名是 IMG_xxx.jpg，要改成 小写 img_xxx.jpg。
+  任务：把 /data/up 下所有 IMG_*.jpg 重命名为 img_*.jpg。
+setup: |
+  mkdir -p /data/up
+  for i in 1 2 3 4 5; do echo pic > /data/up/IMG_00$i.jpg; done
+  echo pic > /data/up/photo.txt
+check: |
+  u=$(ls /data/up | grep -c "^IMG_" || true)
+  l=$(ls /data/up | grep -c "^img_" || true)
+  if [ "$u" -eq 0 ] && [ "$l" -ge 5 ]; then
+    echo '{"pass":true,"score":100,"message":"完成！批量重命名成功"}'
+  else
+    echo '{"pass":false,"score":0,"message":"还剩 '$u' 个大写开头文件"}'
+  fi
+hints:
+  - for f in /data/up/IMG_*.jpg; do ...; done
+  - 新名字符串替换：${f/IMG_/img_}
+  - mv "$f" "$new"
+solution: |
+  for f in /data/up/IMG_*.jpg; do
+    mv "$f" "${f/IMG_/img_}"
+  done
+  ls /data/up

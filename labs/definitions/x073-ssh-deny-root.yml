@@ -1,0 +1,33 @@
+code: ssh-deny-root
+name: 禁止 root 直接登录
+topic: linux
+difficulty: 2
+sortOrder: 73
+tags: [ssh, 安全]
+timeLimitMinutes: 40
+scenario: |
+  基线：root 不许直连 SSH，只能普通用户跳转。
+  任务：设置 PermitRootLogin no 并重启 sshd（判分：sshd_config 含该行且进程在跑，且 appuser 密码登录仍正常，密码 lab123）。
+setup: |
+  id -u appuser >/dev/null 2>&1 || useradd -m -s /bin/bash appuser
+  echo "appuser:lab123" | chpasswd
+  mkdir -p /run/sshd
+  sed -i "/^#\?PermitRootLogin/d" /etc/ssh/sshd_config
+  pkill -x sshd 2>/dev/null; sleep 1; /usr/sbin/sshd
+check: |
+  cfg=$(grep -c "^PermitRootLogin no" /etc/ssh/sshd_config)
+  run=$(pgrep -x sshd | wc -l)
+  ok=$(sshpass -p lab123 ssh -o StrictHostKeyChecking=no -o ConnectTimeout=5 appuser@127.0.0.1 'echo OK' 2>/dev/null)
+  if [ "$cfg" -ge 1 ] && [ "$run" -ge 1 ] && [ "$ok" = "OK" ]; then
+    echo '{"pass":true,"score":100,"message":"完成！基线加固完成"}'
+  else
+    echo '{"pass":false,"score":0,"message":"PermitRootLogin no + sshd 存活 + appuser 可登录"}'
+  fi
+hints:
+  - 加行：PermitRootLogin no
+  - 重启 sshd
+  - 用 appuser 验证没把自己锁外面（运维素养！）
+solution: |
+  echo "PermitRootLogin no" >> /etc/ssh/sshd_config
+  pkill -x sshd; sleep 1; /usr/sbin/sshd
+  sshpass -p lab123 ssh -o StrictHostKeyChecking=no appuser@127.0.0.1 whoami

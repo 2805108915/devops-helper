@@ -1,0 +1,25 @@
+code: shell-time-calc
+name: 时间戳处理
+topic: shell
+difficulty: 1
+sortOrder: 87
+tags: [date]
+timeLimitMinutes: 30
+scenario: |
+  日志排查要把时间戳转可读时间。
+  任务：把时间戳 1761379200 转成 "年-月-日 时:分:秒" 格式写入 /root/ts.txt。
+setup: |
+  echo 1761379200 > /opt/ts.in
+check: |
+  if grep -qE "202[0-9]-[0-9]{2}-[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9]{2}" /root/ts.txt 2>/dev/null; then
+    echo '{"pass":true,"score":100,"message":"完成！时间转换成功"}'
+  else
+    echo '{"pass":false,"score":0,"message":"date -d @1761379200 +%F\\ %T"}'
+  fi
+hints:
+  - date -d @时间戳
+  - 格式 +%F\ %T 或 +"%Y-%m-%d %H:%M:%S"
+  - 落盘
+solution: |
+  date -d @1761379200 +"%Y-%m-%d %H:%M:%S" | tee /root/ts.txt
+  cat /root/ts.txt

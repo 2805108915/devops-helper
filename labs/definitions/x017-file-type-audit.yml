@@ -1,0 +1,32 @@
+code: file-type-audit
+name: 可疑文件类型审计
+topic: linux
+difficulty: 2
+sortOrder: 17
+tags: [file, 安全]
+timeLimitMinutes: 30
+scenario: |
+  安全巡检：/tmp 发现可疑文件，需要识别类型并清理可执行体。
+  任务：用 file 命令识别 /tmp/suspect 下文件；删除其中的 ELF 可执行文件，保留文本。
+setup: |
+  mkdir -p /tmp/suspect
+  cp /bin/true /tmp/suspect/svc1
+  cp /bin/cat /tmp/suspect/svc2
+  printf "#!/bin/bash\necho hi\n" > /tmp/suspect/run.sh
+  echo "plain text" > /tmp/suspect/note.txt
+check: |
+  elf=$(find /tmp/suspect -type f -exec file {} \; | grep -c ELF || true)
+  n=$(find /tmp/suspect -type f | wc -l)
+  if [ "$elf" = "0" ] && [ "$n" -ge 2 ]; then
+    echo '{"pass":true,"score":100,"message":"完成！可执行体清除，文本保留"}'
+  else
+    echo '{"pass":false,"score":0,"message":"还有 '$elf' 个 ELF 文件"}'
+  fi
+hints:
+  - file 命令看类型
+  - 批量识别：find ... -exec file {} \;
+  - 按结果过滤删除
+solution: |
+  find /tmp/suspect -type f -exec file {} \;
+  find /tmp/suspect -type f -exec file {} \; | grep ELF | cut -d: -f1 | xargs rm -f
+  ls -la /tmp/suspect

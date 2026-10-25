@@ -1,0 +1,35 @@
+code: perm-web-dir
+name: Web 目录权限修复
+topic: linux
+difficulty: 2
+sortOrder: 23
+tags: [权限]
+timeLimitMinutes: 30
+scenario: |
+  Nginx 以 www-data 跑，站点目录 /var/www/shop 属 root 且无读权限，访问 403。
+  任务：修正目录权限使 www-data 可读文件并可进入目录（保持 index.html 内容不变），并启动 nginx 使 curl 返回 200。
+setup: |
+  mkdir -p /var/www/shop
+  echo "SHOP_OK" > /var/www/shop/index.html
+  chown -R root:root /var/www/shop
+  chmod -R 700 /var/www/shop
+  cat > /etc/nginx/sites-available/shop <<EOF
+  server { listen 8090; root /var/www/shop; index index.html; }
+  EOF
+  ln -sf /etc/nginx/sites-available/shop /etc/nginx/sites-enabled/shop
+check: |
+  code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 3 http://127.0.0.1:8090/ 2>/dev/null)
+  if [ "$code" = "200" ]; then
+    echo '{"pass":true,"score":100,"message":"完成！站点 200"}'
+  else
+    echo '{"pass":false,"score":0,"message":"当前 http://127.0.0.1:8090/ 返回 '$code'（403=目录读/执行权限，其他=nginx未启动）"}'
+  fi
+hints:
+  - 403 是权限：目录需要 r+x（755），文件 r（644）
+  - chmod -R 或分别处理
+  - 启动：nginx（配置已就绪）
+solution: |
+  chmod 755 /var/www/shop
+  chmod 644 /var/www/shop/index.html
+  nginx
+  curl -s http://127.0.0.1:8090/

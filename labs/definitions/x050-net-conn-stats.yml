@@ -1,0 +1,25 @@
+code: net-conn-stats
+name: 连接状态统计
+topic: network
+difficulty: 2
+sortOrder: 50
+tags: [ss]
+timeLimitMinutes: 30
+scenario: |
+  要评估连接健康度。
+  任务：统计系统当前各 TCP 状态连接数（按状态计数，含 LISTEN），以 "数量 状态" 每行格式写入 /root/connstat.txt。
+setup: |
+  for i in 1 2 3; do (exec 3<>/dev/tcp/127.0.0.1/80 && sleep 60) & done 2>/dev/null; sleep 1
+check: |
+  if [ -f /root/connstat.txt ] && grep -qE "LISTEN" /root/connstat.txt && [ "$(wc -l < /root/connstat.txt)" -ge 3 ]; then
+    echo '{"pass":true,"score":100,"message":"完成！连接画像完成"}'
+  else
+    echo '{"pass":false,"score":0,"message":"ss -ant 状态列 | sort | uniq -c"}'
+  fi
+hints:
+  - 拿状态：ss -ant 第一列
+  - 计数：sort | uniq -c
+  - 至少应有 LISTEN/ESTAB 等多行
+solution: |
+  ss -ant | awk 'NR>1{print $1}' | sort | uniq -c > /root/connstat.txt
+  cat /root/connstat.txt

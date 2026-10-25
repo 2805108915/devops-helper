@@ -1,0 +1,26 @@
+code: net-route-table
+name: 路由表与本地路由
+topic: network
+difficulty: 1
+sortOrder: 54
+tags: [路由]
+timeLimitMinutes: 20
+scenario: |
+  网络组要路由信息。
+  任务：把默认路由那一行写入 /root/default-route.txt。
+setup: |
+  echo ok
+check: |
+  if [ -f /root/default-route.txt ] && grep -q "default" /root/default-route.txt; then
+    echo '{"pass":true,"score":100,"message":"完成！默认路由留存"}'
+  else
+    echo '{"pass":false,"score":0,"message":"ip route | grep default > /root/default-route.txt"}'
+  fi
+hints:
+  - ip route 看路由表
+  - 默认路由以 default 开头
+  - 落盘
+solution: |
+  ip route
+  ip route | grep default > /root/default-route.txt
+  cat /root/default-route.txt

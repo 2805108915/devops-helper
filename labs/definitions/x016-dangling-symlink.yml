@@ -1,0 +1,33 @@
+code: dangling-symlink
+name: 悬空软链接清理
+topic: linux
+difficulty: 2
+sortOrder: 16
+tags: [find, 软链接]
+timeLimitMinutes: 30
+scenario: |
+  /opt/versions 使用软链接 current 指向当前版本，升级后遗留了大量失效链接。
+  任务：找出 /opt/versions 下所有失效（悬空）软链接并删除，保留有效链接。
+setup: |
+  mkdir -p /opt/versions/v1 /opt/versions/v2
+  echo app > /opt/versions/v1/run.sh
+  ln -sf /opt/versions/v1 /opt/versions/current
+  ln -sf /opt/versions/v3 /opt/versions/old
+  ln -sf /opt/versions/v4 /opt/versions/backup
+  ln -sf /etc/hostname /opt/versions/host
+check: |
+  b=$(find /opt/versions -xtype l | wc -l)
+  g=$(find /opt/versions -type l ! -xtype l | wc -l)
+  if [ "$b" -eq 0 ] && [ "$g" -ge 2 ]; then
+    echo '{"pass":true,"score":100,"message":"完成！失效链接清理，有效链接保留"}'
+  else
+    echo '{"pass":false,"score":0,"message":"还剩 '$b' 个失效链接（find -xtype l 定位）"}'
+  fi
+hints:
+  - 悬空链接：find /opt/versions -xtype l
+  - 删除可以 xargs rm
+  - 验证：ls -la /opt/versions
+solution: |
+  find /opt/versions -xtype l -ls
+  find /opt/versions -xtype l -delete
+  ls -la /opt/versions

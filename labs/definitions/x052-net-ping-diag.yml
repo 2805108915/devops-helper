@@ -1,0 +1,25 @@
+code: net-ping-diag
+name: ICMP 连通性诊断
+topic: network
+difficulty: 1
+sortOrder: 52
+tags: [ping]
+timeLimitMinutes: 20
+scenario: |
+  验证本机网络栈：对 127.0.0.1 做 3 次 ping，把丢包率那一行写入 /root/ping.txt。
+setup: |
+  echo ok
+check: |
+  if [ -f /root/ping.txt ] && grep -qiE "packet loss|丢包" /root/ping.txt; then
+    echo '{"pass":true,"score":100,"message":"完成！连通性数据留存"}'
+  else
+    echo '{"pass":false,"score":0,"message":"ping -c 3 127.0.0.1 结果中的丢包行落盘"}'
+  fi
+hints:
+  - ping -c 3 127.0.0.1
+  - 丢包行含 "packet loss"
+  - grep 过滤后写入
+solution: |
+  ping -c 3 127.0.0.1
+  ping -c 3 127.0.0.1 | grep "packet loss" > /root/ping.txt
+  cat /root/ping.txt

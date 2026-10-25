@@ -6,7 +6,9 @@ export const useAppStore = defineStore('app', {
     topics: [],
     topicsLoaded: false,
     // 跨页共享的题库筛选（岗位页跳转用）
-    questionFilter: {}
+    questionFilter: {},
+    // 刷题页上下文：当前筛选下的题目 id 序列
+    questionIds: []
   }),
   actions: {
     async loadTopics(force = false) {

@@ -1,0 +1,29 @@
+code: proc-kill-loop
+name: 清理失控循环进程
+topic: linux
+difficulty: 1
+sortOrder: 28
+tags: [ps, kill]
+timeLimitMinutes: 30
+scenario: |
+  机器卡顿：3 个失控 busy loop 吃满 CPU。
+  任务：找出并终止全部失控进程，使高 CPU（>80%）进程数为 0。
+setup: |
+  for i in 1 2 3; do setsid sh -c 'while :; do :; done' >/dev/null 2>&1 < /dev/null & done
+  sleep 2
+check: |
+  sleep 3
+  busy=$(ps aux | awk '$3 > 80 {c++} END{print c+0}')
+  if [ "$busy" -eq 0 ]; then
+    echo '{"pass":true,"score":100,"message":"完成！CPU 恢复正常"}'
+  else
+    echo '{"pass":false,"score":0,"message":"还有 '$busy' 个高CPU进程"}'
+  fi
+hints:
+  - 定位：top -bn1 或 ps aux --sort=-%cpu
+  - 匹配命令行杀：pkill -9 -f "while"
+  - 验证再查
+solution: |
+  ps aux --sort=-%cpu | head -5
+  pkill -9 -f "while :; do :; done"
+  ps aux | awk '$3 > 80' | wc -l

@@ -1,0 +1,35 @@
+code: disk-file-held
+name: 删除了文件但空间没释放
+topic: linux
+difficulty: 2
+sortOrder: 38
+tags: [lsof, 经典]
+timeLimitMinutes: 30
+scenario: |
+  同事 rm 了一个 5GB 日志但 df 没变化（进程还握着句柄）。
+  任务：用 lsof 找到被删除仍被占用的文件，通过 /proc/<pid>/fd/N 清空它使空间释放（不允许杀进程，进程是关键服务）。
+setup: |
+  mkdir -p /var/log/big
+  setsid sh -c 'exec 3>/var/log/big/held.log; sleep 600' >/dev/null 2>&1 < /dev/null &
+  sleep 1
+  PID=$(pgrep -f "sleep 600" | head -1)
+  dd if=/dev/zero of=/proc/$PID/fd/3 bs=1M count=5 status=none 2>/dev/null || true
+  rm -f /var/log/big/held.log
+check: |
+  h=$(df -m / | awk 'NR==2{print $3}')
+  leaked=$(lsof +L1 2>/dev/null | grep -c held.log || true)
+  if [ "$leaked" = "0" ]; then
+    echo '{"pass":true,"score":100,"message":"完成！句柄内文件已清空"}'
+  else
+    echo '{"pass":false,"score":0,"message":"仍被持有：lsof | grep deleted 找 fd，然后 > /proc/PID/fd/N"}'
+  fi
+hints:
+  - 定位：lsof +L1 或 lsof | grep deleted
+  - 找到 PID 和 fd 号
+  - 清空该 fd：> /proc/<pid>/fd/<n>
+solution: |
+  lsof +L1 | grep held
+  PID=$(lsof +L1 | grep held.log | awk '{print $2}' | head -1)
+  FD=$(lsof +L1 | grep held.log | awk '{print $4}' | head -1 | grep -oE "^[0-9]+")
+  > /proc/$PID/fd/$FD
+  lsof +L1 | grep held || echo released
