@@ -25,14 +25,40 @@ public class SpaStaticConfig implements WebMvcConfigurer {
     private String configured;
 
     private File frontDir() {
-        List<String> candidates = configured.isBlank()
-                ? List.of("./frontend/dist", "../frontend/dist")
-                : List.of(configured);
-        for (String c : candidates) {
-            File dir = new File(c);
-            if (new File(dir, "index.html").exists()) {
-                return dir;
+        // 1. 显式配置优先
+        if (!configured.isBlank()) {
+            File dir = new File(configured);
+            return new File(dir, "index.html").exists() ? dir : null;
+        }
+        // 2. 从 jar/classes 位置向上反推（与启动时工作目录无关，双击快捷方式也稳定）
+        File dir = fromCodeSource();
+        if (dir != null) {
+            return dir;
+        }
+        // 3. 兜底：按工作目录探测
+        for (String c : List.of("./frontend/dist", "../frontend/dist")) {
+            File d = new File(c);
+            if (new File(d, "index.html").exists()) {
+                return d;
             }
+        }
+        return null;
+    }
+
+    /** 代码源在 .../backend/target/ 下，逐级向上找 frontend/dist */
+    private File fromCodeSource() {
+        try {
+            File codeSource = new File(SpaStaticConfig.class.getProtectionDomain()
+                    .getCodeSource().getLocation().toURI());
+            File cur = codeSource.getParentFile();
+            for (int i = 0; i < 5 && cur != null; i++) {
+                File candidate = new File(cur, "frontend/dist");
+                if (new File(candidate, "index.html").exists()) {
+                    return candidate;
+                }
+                cur = cur.getParentFile();
+            }
+        } catch (Exception ignored) {
         }
         return null;
     }
