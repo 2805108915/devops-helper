@@ -80,6 +80,7 @@ const hintLevel = ref(0)
 const showSolution = ref(false)
 const countdown = ref('')
 const error = ref('')
+const termRef = ref()
 
 let term = null
 let ws = null
