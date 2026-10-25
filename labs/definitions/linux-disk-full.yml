@@ -1,0 +1,49 @@
+code: linux-disk-full
+name: 磁盘写满排查
+topic: linux
+difficulty: 1
+sortOrder: 1
+tags: [磁盘, df, du, 必考]
+timeLimitMinutes: 45
+scenario: |
+  监控告警：服务器磁盘使用率 95%，写入即将失败。
+  初步定位是应用日志暴涨 + 遗忘的调试文件导致。
+
+  你的任务：
+  1. 找出占空间的大文件（>50MB）
+  2. 清理垃圾文件：使 /var/log/app 目录总大小 < 10MB，且 /tmp 下没有 core 调试文件
+  3. 注意：/var/log/app/app.log 是正在使用的日志，不允许删除
+setup: |
+  mkdir -p /var/log/app
+  dd if=/dev/zero of=/var/log/app/app.log.2026-10-24 bs=1M count=200 status=none
+  dd if=/dev/zero of=/var/log/app/debug.old bs=1M count=80 status=none
+  dd if=/dev/zero of=/tmp/core.debug bs=1M count=60 status=none
+  echo "app running" > /var/log/app/app.log
+  touch -d "3 days ago" /var/log/app/debug.old
+check: |
+  logs_mb=$(du -sm /var/log/app | awk '{print $1}')
+  core_cnt=$(ls /tmp/core* 2>/dev/null | wc -l)
+  app_log_exists=0
+  [ -f /var/log/app/app.log ] && app_log_exists=1
+  if [ "$app_log_exists" = "1" ] && [ "$logs_mb" -lt 10 ] && [ "$core_cnt" -eq 0 ]; then
+    echo '{"pass":true,"score":100,"message":"完成！垃圾文件已清理，正在使用的日志保留完好"}'
+  else
+    echo '{"pass":false,"score":0,"message":"未达标：/var/log/app 当前 '$logs_mb'M（要求<10M），core文件残留 '$core_cnt' 个，app.log 存在标志 '$app_log_exists'"}'
+  fi
+hints:
+  - 先整体看哪里占空间：du -sh /var/log/* /tmp/*
+  - 精确定位大文件：ls -lh /var/log/app/ 或 find / -size +50M 2>/dev/null
+  - 按时间和大小确认后删除：rm 前先 ls -lh 看一眼，养成习惯
+  - 想看删除文件是否还被进程占用（空间未释放场景）：lsof | grep deleted
+solution: |
+  # 1. 定位
+  du -sh /var/log/* /tmp/* | sort -rh | head
+  ls -lh /var/log/app/
+
+  # 2. 清理（保留 app.log）
+  rm /var/log/app/app.log.2026-10-24 /var/log/app/debug.old
+  rm /tmp/core.debug
+
+  # 3. 验证
+  du -sm /var/log/app
+  ls /tmp/core* 2>/dev/null

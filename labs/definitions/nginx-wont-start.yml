@@ -1,0 +1,38 @@
+code: nginx-wont-start
+name: Nginx 起不来（配置错误）
+topic: nginx
+difficulty: 1
+sortOrder: 5
+tags: [nginx, 配置, 高频]
+timeLimitMinutes: 30
+scenario: |
+  同事发来消息："我改了下 nginx 配置，然后 nginx 就挂了起不来"。
+  现在 nginx 进程不在运行。
+
+  你的任务：
+  1. 找出配置错误的原因（具体到哪一行什么错）
+  2. 修复配置并启动 nginx
+  3. 使 curl http://localhost/ 返回 200
+setup: |
+  cp /etc/nginx/nginx.conf /etc/nginx/nginx.conf.bak
+  echo "log_format_broken on;" >> /etc/nginx/nginx.conf
+  pkill -x nginx 2>/dev/null || true
+check: |
+  pgrep -x nginx >/dev/null
+  running=$?
+  code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 3 http://localhost/ 2>/dev/null)
+  if [ "$running" = "0" ] && [ "$code" = "200" ]; then
+    echo '{"pass":true,"score":100,"message":"完成！Nginx 已正常运行"}'
+  else
+    echo '{"pass":false,"score":0,"message":"未达标：nginx运行='$running' http返回='$code'"}'
+  fi
+hints:
+  - 第一步永远是测试配置：nginx -t，它会告诉你哪个文件哪一行错
+  - nginx -t 报 unknown directive 之类错误时，去对应文件删掉/修正那一行
+  - 修好后：nginx 启动，再 curl -I http://localhost/ 验证
+solution: |
+  nginx -t
+  # 报错指向最后一行 log_format_broken —— 这是被人塞进来的坏指令
+  sed -i '$d' /etc/nginx/nginx.conf      # 删除最后一行
+  nginx -t && nginx
+  curl -s -o /dev/null -w "%{http_code}\n" http://localhost/

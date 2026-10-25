@@ -1,0 +1,46 @@
+code: net-port-conflict
+name: 端口被占用排查
+topic: network
+difficulty: 1
+sortOrder: 4
+tags: [端口, ss, 必考]
+timeLimitMinutes: 30
+scenario: |
+  站点应当由 Nginx 在 8080 端口提供服务（配置文件已就位），
+  但现在 curl http://localhost:8080 返回的内容不对。
+
+  你的任务：
+  1. 排查 8080 端口被谁占用
+  2. 终止占用端口的异常进程
+  3. 启动 Nginx，使 http://localhost:8080 返回 200 且内容包含 nginx-lab-ok
+setup: |
+  mkdir -p /var/www/html
+  echo "<h1>nginx-lab-ok</h1>" > /var/www/html/index.html
+  cat > /etc/nginx/sites-available/lab8080 <<'CONF'
+  server {
+      listen 8080;
+      root /var/www/html;
+      index index.html;
+  }
+  CONF
+  ln -sf /etc/nginx/sites-available/lab8080 /etc/nginx/sites-enabled/lab8080
+  rm -f /etc/nginx/sites-enabled/default
+  cd /tmp && setsid python3 -m http.server 8080 >/dev/null 2>&1 < /dev/null &
+  sleep 1
+check: |
+  code=$(curl -s -o /tmp/check_body -w "%{http_code}" http://localhost:8080/)
+  if [ "$code" = "200" ] && grep -q nginx-lab-ok /tmp/check_body 2>/dev/null; then
+    echo '{"pass":true,"score":100,"message":"完成！8080 已由 Nginx 正常提供服务"}'
+  else
+    echo '{"pass":false,"score":0,"message":"未达标：当前 http://localhost:8080 返回 '$code'，应为 200 且内容含 nginx-lab-ok"}'
+  fi
+hints:
+  - 看端口占用：ss -tlnp | grep 8080
+  - 找到进程后 kill 掉，再启动 nginx（nginx 命令即可，配置已就位）
+  - 验证：curl -s http://localhost:8080/ | grep nginx-lab-ok
+solution: |
+  ss -tlnp | grep 8080              # 发现被 python3 http.server 占用
+  kill <python的pid>
+  nginx                              # 启动
+  curl -s -o /dev/null -w "%{http_code}\n" http://localhost:8080/
+  curl -s http://localhost:8080/ | grep nginx-lab-ok

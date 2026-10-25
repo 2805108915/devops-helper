@@ -1,0 +1,57 @@
+code: nginx-502-backend
+name: 502 排查（后端挂了）
+topic: nginx
+difficulty: 2
+sortOrder: 6
+tags: [nginx, 502, 排障, 必考]
+timeLimitMinutes: 45
+scenario: |
+  用户反馈通过网关访问接口报 502 Bad Gateway。
+  架构：Nginx 反向代理 /api/ 到本机 9000 端口的后端服务（python）。
+  后端的启动脚本在 /opt/app/start.sh。
+
+  你的任务：
+  1. 复现并确认 502
+  2. 排查后端为什么不通（Nginx 侧 + 后端侧分别看什么？）
+  3. 恢复后端服务，使 curl http://localhost/api/ 返回 200 且内容包含 backend-ok
+setup: |
+  mkdir -p /opt/app/web
+  echo "backend-ok" > /opt/app/web/index.html
+  cat > /opt/app/start.sh <<'SH'
+  #!/bin/bash
+  mkdir -p /opt/app/web /var/log/app
+  [ -f /opt/app/web/index.html ] || echo "backend-ok" > /opt/app/web/index.html
+  cd /opt/app/web && nohup python3 -m http.server 9000 >>/var/log/app/backend.log 2>&1 &
+  SH
+  chmod +x /opt/app/start.sh
+  cat > /etc/nginx/sites-available/api <<'CONF'
+  server {
+      listen 80;
+      location /api/ {
+          proxy_pass http://127.0.0.1:9000/;
+          proxy_set_header Host $host;
+      }
+  }
+  CONF
+  ln -sf /etc/nginx/sites-available/api /etc/nginx/sites-enabled/api
+  rm -f /etc/nginx/sites-enabled/default
+  nginx -t 2>/dev/null && (nginx 2>/dev/null || nginx -s reload)
+check: |
+  code=$(curl -s -o /tmp/api_body -w "%{http_code}" --max-time 3 http://localhost/api/ 2>/dev/null)
+  if [ "$code" = "200" ] && grep -q backend-ok /tmp/api_body 2>/dev/null; then
+    echo '{"pass":true,"score":100,"message":"完成！后端已恢复，网关返回 200"}'
+  else
+    echo '{"pass":false,"score":0,"message":"未达标：当前 /api/ 返回 '$code'，应为 200 且内容含 backend-ok"}'
+  fi
+hints:
+  - 复现：curl -I http://localhost/api/ 确认 502
+  - 502 = Nginx 连不上后端 → 在本机直接 curl http://127.0.0.1:9000 验证后端是否存活
+  - 看后端端口有没有人监听：ss -tlnp | grep 9000
+  - 用启动脚本拉起后端：/opt/app/start.sh，再验证
+solution: |
+  curl -I http://localhost/api/                    # 502
+  curl -v --max-time 2 http://127.0.0.1:9000/      # connection refused → 后端挂
+  ss -tlnp | grep 9000                             # 无人监听
+  /opt/app/start.sh                                # 拉起后端
+  ss -tlnp | grep 9000
+  curl -s http://localhost/api/ | grep backend-ok

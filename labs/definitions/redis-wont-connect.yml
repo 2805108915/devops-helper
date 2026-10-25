@@ -1,0 +1,47 @@
+code: redis-wont-connect
+name: Redis 连不上排查
+topic: mw
+difficulty: 2
+sortOrder: 9
+tags: [redis, 排障]
+timeLimitMinutes: 45
+scenario: |
+  应用大量报错：Redis connection refused / connection failed。
+  Redis 配置文件：/etc/redis/redis.conf。
+
+  你的任务：
+  1. 确认故障：redis-cli ping
+  2. 排查原因：服务没起？配置有错？端口被占？
+  3. 修复并启动 Redis，使 redis-cli ping 返回 PONG
+setup: |
+  cat > /etc/redis/redis.conf <<'CONF'
+  bind 127.0.0.2
+  port 6379
+  daemonize yes
+  logfile /var/log/redis/redis-server.log
+  dir /var/lib/redis
+  CONF
+  mkdir -p /var/log/redis /var/lib/redis
+check: |
+  pong=$(redis-cli ping 2>/dev/null)
+  if [ "$pong" = "PONG" ]; then
+    echo '{"pass":true,"score":100,"message":"完成！Redis 已恢复，PONG"}'
+  else
+    echo '{"pass":false,"score":0,"message":"未达标：redis-cli ping 返回 '\''$pong'\''（应为 PONG）。提示：服务起了吗？bind 地址对吗？看日志 /var/log/redis/redis-server.log"}'
+  fi
+hints:
+  - 先复现：redis-cli ping；再查端口：ss -tlnp | grep 6379
+  - 服务没起就启动：redis-server /etc/redis/redis.conf
+  - 起了还是连不上？看配置 bind —— 默认客户端连 127.0.0.1
+  - 改对配置后要重启：pkill redis-server && redis-server /etc/redis/redis.conf
+solution: |
+  redis-cli ping                              # 报 connection refused
+  ss -tlnp | grep 6379                        # 无监听 → 先启动
+  redis-server /etc/redis/redis.conf
+  redis-cli ping                              # 还是拒绝 → 服务可能起了但绑定错误
+  ss -tlnp | grep 6379                        # 绑定在 127.0.0.2！
+  grep ^bind /etc/redis/redis.conf            # bind 127.0.0.2 是错的
+  sed -i 's/^bind .*/bind 127.0.0.1/' /etc/redis/redis.conf
+  pkill redis-server; sleep 1
+  redis-server /etc/redis/redis.conf
+  redis-cli ping

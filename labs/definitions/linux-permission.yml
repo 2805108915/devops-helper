@@ -1,0 +1,46 @@
+code: linux-permission
+name: 文件权限修复
+topic: linux
+difficulty: 1
+sortOrder: 3
+tags: [权限, chmod, chown]
+timeLimitMinutes: 30
+scenario: |
+  /opt/app 下的应用以 appuser 用户运行，但现在起不来：
+  1. /opt/app/run.sh 没有执行权限
+  2. /opt/app/config 属主 root 且权限 600，appuser 读不到（报 Permission denied）
+
+  你的任务：
+  1. 给 run.sh 加执行权限
+  2. 让 appuser 能读取 config（用 chown 或 chmod 均可，生产上推荐哪种？想一想）
+setup: |
+  id -u appuser >/dev/null 2>&1 || useradd -m -s /bin/bash appuser
+  mkdir -p /opt/app
+  echo "DB_PASSWORD=s3cret" > /opt/app/config
+  printf '#!/bin/bash\necho "app running"\n' > /opt/app/run.sh
+  chown root:root /opt/app/config
+  chmod 600 /opt/app/config
+  chmod 644 /opt/app/run.sh
+check: |
+  ok=1
+  [ -x /opt/app/run.sh ] || ok=0
+  su appuser -c 'cat /opt/app/config >/dev/null 2>&1' || ok=0
+  if [ "$ok" = "1" ]; then
+    echo '{"pass":true,"score":100,"message":"完成！脚本可执行且 appuser 能读取配置"}'
+  else
+    echo '{"pass":false,"score":0,"message":"未达标：检查 run.sh 是否可执行(x)，以及 su appuser -c 是否能读到 config"}'
+  fi
+hints:
+  - 切换用户验证读权限：su appuser -c 'cat /opt/app/config'
+  - 执行权限：chmod +x /opt/app/run.sh
+  - 属主方案：chown appuser:appuser /opt/app/config；或组方案：chgrp + chmod 640（最小权限原则）
+solution: |
+  chmod +x /opt/app/run.sh
+  # 方案A（简单）：改属主
+  chown appuser:appuser /opt/app/config
+  # 方案B（最小权限）：属组可读
+  # chgrp appuser /opt/app/config && chmod 640 /opt/app/config
+
+  # 验证
+  ls -l /opt/app/
+  su appuser -c 'cat /opt/app/config && /opt/app/run.sh'

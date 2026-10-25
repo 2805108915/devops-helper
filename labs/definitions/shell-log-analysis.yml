@@ -1,0 +1,53 @@
+code: shell-log-analysis
+name: 日志分析：统计 TOP5 IP
+topic: shell
+difficulty: 2
+sortOrder: 8
+tags: [awk, sort, uniq, 实战, 必考]
+timeLimitMinutes: 45
+scenario: |
+  安全组需要 access.log 的访问来源分析。
+  日志文件：/var/log/app/access.log（Nginx access 格式，第一列是 IP）。
+
+  你的任务：
+  写命令或脚本统计访问量最高的 5 个 IP，
+  结果写入 /root/top5.txt，每行格式：次数 空格 IP（按次数从大到小）。
+setup: |
+  mkdir -p /var/log/app
+  gen() {
+    i=0
+    while [ "$i" -lt "$2" ]; do
+      echo "$1 - - [25/Oct/2026:10:00:00 +0800] \"GET /index HTTP/1.1\" 200 512"
+      i=$((i+1))
+    done
+  }
+  {
+    gen 10.0.0.1 120
+    gen 10.0.0.2 80
+    gen 10.0.0.3 60
+    gen 10.0.0.4 40
+    gen 10.0.0.5 20
+    gen 172.16.0.9 15
+    gen 172.16.0.7 12
+  } | sort -R > /var/log/app/access.log
+check: |
+  f=/root/top5.txt
+  if [ ! -f "$f" ]; then
+    echo '{"pass":false,"score":0,"message":"未达标：/root/top5.txt 不存在"}'
+    exit 0
+  fi
+  lines=$(wc -l < "$f")
+  first=$(head -1 "$f")
+  if [ "$lines" -ge 5 ] && echo "$first" | grep -q "10.0.0.1" && echo "$first" | grep -q "120"; then
+    echo '{"pass":true,"score":100,"message":"完成！TOP5 统计正确"}'
+  else
+    echo '{"pass":false,"score":0,"message":"未达标：当前共 '$lines' 行，首行为 '\''$first'\''（要求至少5行，首行为 120 10.0.0.1）"}'
+  fi
+hints:
+  - 管线核心四步：awk 取列 → sort → uniq -c → sort -rn → head
+  - awk '{print $1}' /var/log/app/access.log
+  - 完整一条：awk ''{print $1}'' 文件 | sort | uniq -c | sort -rn | head -5
+  - 注意 uniq -c 的计数在前面，正好是 "次数 IP" 格式，重定向 > /root/top5.txt 即可
+solution: |
+  awk '{print $1}' /var/log/app/access.log | sort | uniq -c | sort -rn | head -5 > /root/top5.txt
+  cat /root/top5.txt

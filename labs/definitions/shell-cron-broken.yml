@@ -1,0 +1,50 @@
+code: shell-cron-broken
+name: 定时备份任务失效
+topic: shell
+difficulty: 2
+sortOrder: 10
+tags: [crontab, cron, 实战]
+timeLimitMinutes: 45
+scenario: |
+  巡检发现 /backup/backup.log 已经三天没有新记录——
+  每小时一次的备份任务（往日志追加一行）失效了。
+  备份脚本本体在 /opt/backup.sh，root 的 crontab 里有对应条目。
+
+  你的任务：找出**两个**故障原因并修复：
+  1. 让 cron 守护进程运行起来
+  2. 修正 crontab 中的错误（对比脚本真实路径）
+  修复后手动执行一次备份脚本验证可用。
+setup: |
+  mkdir -p /backup
+  cat > /opt/backup.sh <<'SH'
+  #!/bin/bash
+  echo "backup at $(date '+%F %T')" >> /backup/backup.log
+  SH
+  chmod +x /opt/backup.sh
+  echo "backup at 2026-10-22 03:00:01" > /backup/backup.log
+  touch -d "3 days ago" /backup/backup.log
+  echo "0 * * * * /opt/scripts/backup.sh" | crontab -
+  pkill -x cron 2>/dev/null || true
+check: |
+  ok=1
+  pgrep -x cron >/dev/null || ok=0
+  crontab -l 2>/dev/null | grep -q ' /opt/backup.sh' || ok=0
+  /opt/backup.sh
+  tail -1 /backup/backup.log | grep -q "backup at" || ok=0
+  if [ "$ok" = "1" ]; then
+    echo '{"pass":true,"score":100,"message":"完成！cron 已运行且 crontab 路径正确"}'
+  else
+    echo '{"pass":false,"score":0,"message":"未达标。检查：1) pgrep cron 有进程？ 2) crontab -l 是否指向 /opt/backup.sh？"}'
+  fi
+hints:
+  - 第一个嫌疑：cron 服务本身。pgrep cron 看看，没有就 service cron start 或直接运行 cron
+  - 第二个嫌疑：crontab -l 看条目，对比脚本真实位置 ls /opt/backup.sh
+  - 修 crontab：crontab -e 改正路径（/opt/scripts/backup.sh → /opt/backup.sh）
+  - 验证：手动跑 /opt/backup.sh，tail /backup/backup.log
+solution: |
+  pgrep -x cron || cron          # 原因1：cron 没在运行
+  ls /opt/backup.sh
+  crontab -l                     # 原因2：路径写成 /opt/scripts/backup.sh
+  echo "0 * * * * /opt/backup.sh" | crontab -
+  /opt/backup.sh
+  tail -2 /backup/backup.log

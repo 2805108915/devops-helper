@@ -1,0 +1,41 @@
+code: linux-cpu-high
+name: CPU 飙高排查
+topic: linux
+difficulty: 1
+sortOrder: 2
+tags: [进程, top, ps, 必考]
+timeLimitMinutes: 30
+scenario: |
+  告警：服务器 CPU 使用率持续 99%，疑似异常进程。
+
+  你的任务：
+  1. 找出吃 CPU 的进程
+  2. 确认它们不是正常业务后将其终止
+  3. 确保系统不再有高 CPU 进程（残留进程数 = 0）
+setup: |
+  setsid sh -c 'while :; do :; done' >/dev/null 2>&1 < /dev/null &
+  setsid sh -c 'while :; do :; done' >/dev/null 2>&1 < /dev/null &
+  sleep 2
+check: |
+  sleep 3
+  busy=$(ps aux | awk '$3 > 80 {c++} END {print c+0}')
+  if [ "$busy" -eq 0 ]; then
+    echo '{"pass":true,"score":100,"message":"完成！已无高 CPU 进程"}'
+  else
+    echo '{"pass":false,"score":0,"message":"仍有 '$busy' 个高CPU进程在运行"}'
+  fi
+hints:
+  - top 或 top -bn1 看谁吃 CPU（按 P 按 CPU 排序）
+  - ps aux --sort=-%cpu | head 也行
+  - 终止：kill <pid>，不听话就 kill -9；注意先杀父进程防拉起
+solution: |
+  # 1. 定位
+  top -bn1 | head -15
+  ps aux --sort=-%cpu | head -5
+
+  # 2. 终止（两个 busy loop 的 sh 进程）
+  ps aux | grep 'while' | grep -v grep
+  pkill -9 -f 'while :; do :; done'
+
+  # 3. 验证
+  top -bn1 | head -12

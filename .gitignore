@@ -1,0 +1,17 @@
+# 隔离的工具与数据目录（JDK、Maven仓库、npm缓存、MySQL数据等）
+.tools/
+docker-data/
+
+# 构建产物
+target/
+dist/
+node_modules/
+
+# IDE
+.idea/
+*.iml
+.vscode/
+
+# 日志与临时文件
+*.log
+*.tmp

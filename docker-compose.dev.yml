@@ -1,0 +1,17 @@
+# 开发环境：仅启动 MySQL（数据持久化在项目目录 ./docker-data/mysql 内，保持隔离）
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: devopshelper-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: devops123
+      MYSQL_DATABASE: devops_helper
+      TZ: Asia/Shanghai
+    ports:
+      - "3316:3306"
+    volumes:
+      - ./docker-data/mysql:/var/lib/mysql
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci

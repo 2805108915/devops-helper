@@ -1,0 +1,51 @@
+# DevOpsHelper 完整部署（学生云服务器适用）
+# 用法：先 mvn package 打好后端 jar、无需本地构建前端（镜像内构建），然后 docker compose up -d --build
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: devopshelper-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: devops123
+      MYSQL_DATABASE: devops_helper
+      TZ: Asia/Shanghai
+    volumes:
+      - ./docker-data/mysql:/var/lib/mysql
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-uroot", "-pdevops123"]
+      interval: 10s
+      retries: 10
+
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    container_name: devopshelper-backend
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/devops_helper?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&useSSL=false
+      TZ: Asia/Shanghai
+    volumes:
+      # Lab 定义与镜像构建上下文
+      - ./labs:/labs
+      # 控制 Docker 创建实验沙箱容器（Linux 服务器）
+      - /var/run/docker.sock:/var/run/docker.sock
+    expose:
+      - "9800"
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: devopshelper-frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "80:80"

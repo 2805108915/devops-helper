@@ -1,0 +1,42 @@
+server:
+  port: 9800
+
+spring:
+  application:
+    name: devops-helper
+  datasource:
+    url: jdbc:mysql://localhost:3316/devops_helper?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&useSSL=false
+    username: root
+    password: devops123
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+    # 答案文本中含 shell/nginx 的 ${} 示例，关闭占位符替换
+    placeholder-replacement: false
+  jackson:
+    default-property-inclusion: non_null
+
+mybatis-plus:
+  configuration:
+    map-underscore-to-camel-case: true
+  global-config:
+    banner: false
+    db-config:
+      id-type: auto
+
+logging:
+  level:
+    com.devops.helper: debug
+
+# Lab 沙箱配置（M3 使用）
+lab:
+  # Lab 基础镜像名（首次使用需在 labs/images 下构建）
+  base-image: devopshelper-base:latest
+  # 容器默认存活时间（分钟），到期自动销毁
+  time-limit-minutes: 60
+  # 容器资源限制
+  memory-mb: 512
+  cpu-period: 100000
+  cpu-quota: 200000
