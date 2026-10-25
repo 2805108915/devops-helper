@@ -28,12 +28,9 @@ mybatis-plus:
 
 logging:
   file:
-    name: F:/code-java/devopsHepler/.tools/backend.log
+    name: logs/backend.log
   level:
     com.devops.helper: debug
-
-# 前端构建产物目录（绝对路径，避免任何工作目录/jar位置探测的不确定性）
-static-front-dir: F:/code-java/devopsHepler/frontend/dist
 
 # Lab 沙箱配置（M3 使用）
 lab:

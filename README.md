@@ -1,125 +1,104 @@
-# DevOpsHelper 运维学习与面试备战平台
+# DevOpsHelper — 运维学习与面试备战平台
 
-一个**单用户本地学习工具**：分类面试题库 + Docker 真实沙箱实操 + 个人知识库 + 间隔复习 + 可选 AI 辅助。
-技术栈：Spring Boot 3 + Vue 3 + MySQL 8 + Docker。项目本身附带了完整的容器化部署方案——它就是你第一个可以写进简历的 DevOps 实战项目。
+> **DevOpsHelper** — An open-source ops/SRE learning platform: categorized interview questions, **real Linux sandboxes in your browser**, spaced repetition, a personal knowledge base, and optional AI assistance.
+>
+> 面向运维/DevOps/SRE 学习者与求职者的单用户本地学习工具：**1000 道精选面试题 + 100 个真实容器实操实验 + 102 篇知识库笔记 + SM-2 间隔复习 + 可选 AI 模拟面试**。
 
-## 功能总览
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-| 模块 | 说明 |
-|------|------|
-| 📝 题库刷题 | 内置 100 道精选高频题（问答/场景排障），按 10 大知识点 × 难度 × 岗位筛选，支持自评、错题本、自建题目录入 |
-| 🔁 间隔复习 | SM-2 算法（同 Anki）：不会→明天，模糊→3 天，会→间隔倍增；每日复习队列 |
-| 🧪 实操实验室 | **核心亮点**：每道实操题启动一个真实 Linux 容器并预埋故障（磁盘写满、CPU 打满、502、SSH 登不上、Redis 连不上...），在浏览器 Web 终端里排查修复，系统自动判分，限时自动销毁 |
-| 📚 知识库 | Markdown 笔记按知识点组织，与题目双向关联 |
-| 🧭 岗位路线 | 初级运维 / DevOps / SRE / 云计算四条学习路线图 + 对应题集进度 |
-| 🤖 AI 助手 | 可选接入 OpenAI 兼容 API（GLM/DeepSeek/OpenAI）：模拟面试官、题目追问、生成新题一键入库 |
+## ✨ 亮点 Features
 
-## 快速开始
+- 🧪 **浏览器里的真实 Linux 沙箱**：每个实操实验启动一个真实 Docker 容器并预埋故障（磁盘写满、502、OOM、SSH 登录失败、Redis 连不上……），你在网页终端里排查修复，系统自动判分，限时自动销毁
+- 📝 **1000 道面试题**：10 大知识点 × 问答/选择/场景排障，附参考答案、面试官追问、出题语境，支持筛选/错题本/自建题库
+- 🔁 **SM-2 间隔复习**：不会→明天，模糊→3 天，会→间隔倍增；每日复习队列 + 掌握度雷达图
+- 📚 **102 篇知识库**：每知识点 10 篇实战速查（命令配方/排障手册/配置模板），Markdown 编辑、与题目互链
+- 🧭 **四条岗位路线图**：初级运维 / DevOps / SRE / 云计算
+- 🤖 **可选 AI 助手**：OpenAI 兼容接口（GLM/DeepSeek/OpenAI），模拟面试官连环追问、题目深挖、生成新题一键入库
+- 🚀 **一键启动**（Windows）+ docker compose 一键部署（Linux 服务器）
 
-### 日常使用：桌面一键启动（推荐）
+## 🚀 快速开始
 
-桌面上已有 **「DevOpsHelper 一键启动」** 快捷方式（指向 `scripts/start-all.cmd`）。开机后双击它，脚本会自动：
+### 方式 A：标准环境（任何平台）
 
-1. 启动 Docker Desktop（若未运行，首次约 1-3 分钟）
-2. 启动 MySQL 容器（数据在 `./docker-data/mysql`，可重复执行）
-3. 启动后端服务（同时托管前端页面）
-4. 自动打开浏览器 **http://localhost:9800**
-
-停止全部服务：双击 `scripts/stop-all.cmd`。
-
-> 注：后端已托管前端构建产物，日常使用只有「一个 Java 进程 + 一个 MySQL 容器」，无需 Node。
-
-### 开发模式（改代码时）
-
-**前置要求**：本机已装 Docker Desktop、Node.js 18+。JDK 17 与 Maven 仓库已包含在 `.tools/`（无需自己安装 JDK），所有工具与缓存隔离在项目内。
+前置：JDK 17+、Maven 3.8+、Node.js 18+、Docker（实操实验需要）。
 
 ```bash
-bash scripts/build-backend.sh        # 编译打包后端 + 重新构建前端 dist
-bash scripts/run-backend.sh          # 启动后端 http://localhost:9800（日志 .tools/backend.log）
+# 1. 启动数据库（数据持久化在 ./docker-data/mysql）
+docker compose -f docker-compose.dev.yml up -d
 
-# 前端改动后的热更新开发（可选，仅前端开发时需要）
-bash scripts/dev-frontend.sh         # Vite dev server http://localhost:5173
+# 2. 一体化构建（前端 dist → 内嵌进 jar）
+bash scripts/build-backend.sh
+
+# 3. 启动后端（首次启动自动建表并导入全部内容）
+java -jar backend/target/devops-helper-0.1.0-SNAPSHOT.jar
+
+# 4. 打开 http://127.0.0.1:9800
 ```
+
+### 方式 B：Windows 一键启动
+
+双击桌面快捷方式（或运行 `scripts/start-all.cmd`）：自动 Docker → MySQL → 后端 → 打开浏览器。
+停止服务：`scripts/stop-all.cmd`。
 
 ### 实验室首次使用
 
-1. 打开「实操实验室」页面，Docker 正常时会提示构建基础镜像
-2. 点击「构建基础镜像」（约 3-10 分钟，只需一次）
-3. 任选实验点击「开始实验」→ 右侧出现真实终端，左侧看场景和提示
-4. 排查修复后点「检测判分」，通过后可查看参考解法
+1. 进入「实操实验室」，点击「构建基础镜像」（基于 ubuntu:22.04 预装运维工具全家桶，约 3-10 分钟，仅一次）
+2. 任选实验点击「开始实验」→ 右侧出现真实终端
+3. 按场景排查修复 → 点击「检测判分」→ 通关后查看参考解法
 
-### AI 助手配置（可选）
+### AI 助手（可选）
 
-「AI 助手」页展开配置：填 Base URL / API Key / 模型名并启用。
-以智谱 GLM 为例：`https://open.bigmodel.cn/api/paas/v4` + 你的 Key + `glm-4-flash`（免费额度即可用）。
+「AI 助手」页展开配置：Base URL / API Key / 模型名。
+以智谱 GLM 为例：`https://open.bigmodel.cn/api/paas/v4` + 你的 Key + `glm-4-flash`（免费额度即可）。
 不配置完全不影响其他功能。
 
-## 服务器部署（docker compose 一键）
+## 🖥 服务器部署（docker compose）
 
 ```bash
-# 前提：服务器已装 docker + docker compose，先本地执行过 build-backend.sh
-bash scripts/build-backend.sh
-docker compose up -d --build
-# 访问 http://服务器IP  （80 端口）
+bash scripts/build-backend.sh   # 先本地打包
+docker compose up -d --build    # MySQL + 后端 + Nginx 前端
+# 访问 http://服务器IP（80端口）
 ```
 
-包含三个服务：MySQL（数据持久化在 ./docker-data）、后端（挂载 Docker socket 管理实验沙箱）、前端（Nginx 托管 + 反代）。
-云服务器安全组放行 80 端口即可；建议再套一层域名 + HTTPS（可用 certbot 或云厂商免费证书）。
-
-## 项目结构
+## 📁 项目结构
 
 ```
-devopsHepler/
-├── backend/                  Spring Boot 3 后端
-│   ├── src/main/java/com/devops/helper/
-│   │   ├── lab/              Lab 沙箱核心（docker-java 容器管理/Web终端桥接/判分）
-│   │   ├── ai/               OpenAI 兼容流式客户端
-│   │   └── ...               题库/复习(SM-2)/知识库/笔记/岗位
-│   └── src/main/resources/db/migration/   Flyway 建表+100题种子
-├── frontend/                 Vue3 + Element Plus + xterm.js + ECharts
+├── backend/                  Spring Boot 3（JDK17）
+│   ├── lab/                  🧪 Docker 沙箱核心：容器管理/Web终端(WS+attach)/判分引擎
+│   ├── ai/                   OpenAI 兼容流式客户端（SSE）
+│   ├── review/               SM-2 间隔重复算法
+│   └── db/migration/         Flyway：建表 + 1000题/102篇种子数据
+├── frontend/                 Vue3 + Element Plus + xterm.js + ECharts + md-editor-v3
 ├── labs/
-│   ├── images/base/          实验基础镜像（ubuntu:22.04 + 运维工具全家桶）
-│   └── definitions/*.yml     10 个实验定义（场景/预埋脚本/检测脚本/提示/解法）
-├── scripts/                  开发脚本（全部使用项目内隔离环境）
-├── .tools/                   隔离环境：JDK17、Maven仓库、npm缓存、运行日志（gitignore）
-├── docker-compose.dev.yml    开发用 MySQL
-└── docker-compose.yml        生产部署
+│   ├── images/base/          实验基础镜像 Dockerfile
+│   └── definitions/          100 个实验定义（场景/预埋脚本/检测/提示/解法，YAML）
+├── scripts/content/          ✨ 内容生成器：数据文件 → SQL/YAML（可自行增补内容）
+└── docker-compose*.yml       开发库 / 生产部署
 ```
 
-## 新增一个实操实验
+**自己加题/加实验**：编辑 `scripts/content/` 下的数据文件后执行 `node scripts/content/gen.mjs`，重启后端自动导入。
 
-在 `labs/definitions/` 新建 YAML：
+## 🎓 这个项目本身就是学习素材
 
-```yaml
-code: my-lab            # 唯一编码
-name: 实验名称
-topic: nginx            # 关联知识点（见 topic 表 code）
-difficulty: 2           # 1-3
-timeLimitMinutes: 45
-scenario: |             # 给用户看的故事背景与任务
-  ...
-setup: |                # 容器启动后执行的预埋故障脚本（sh）
-  ...
-check: |                # 判分脚本：最后一行输出 JSON {"pass":bool,"message":"..."}
-  ...
-hints: [提示1, 提示2, 提示3]
-solution: |
-  ...
-```
+它覆盖了 DevOps 面试的高频技术点，README 里就有面试答法：
 
-重启后端自动导入。
+- docker-java 管理容器生命周期、cgroups 资源限额、attach 实现浏览器终端（WebSocket 双向流）
+- exec 执行判分脚本、YAML 驱动的实验定义
+- Flyway 数据库版本化、SM-2 算法、SSE 流式 AI 对话
+- 多阶段构建、Nginx 反代 + WebSocket 升级、docker compose 编排
 
-## 面试可以怎么讲这个项目
+## ❓ 常见问题
 
-- **全栈**：Spring Boot 3 + MyBatis-Plus + Flyway + Vue3 前后端分离
-- **Docker 深度应用**：docker-java 管理容器生命周期、资源限额（cgroups 参数）、attach 实现浏览器 Web 终端（WebSocket 双向流）、exec 执行判分脚本
-- **工程化**：Flyway 数据库版本化、YAML 驱动的实验定义、SM-2 间隔重复算法、SSE 流式 AI 对话
-- **部署**：多阶段构建、Nginx 反代 + WebSocket 升级、docker compose 编排、Docker socket 挂载的容器管理架构
+- **3306/3307 被占用**：本项目开发库用 **3316** 端口，与常见本地 MySQL 不冲突
+- **后端起不来**：先确认 MySQL 容器在跑（`docker ps | grep devopshelper-mysql`）；日志在 `logs/backend.log`
+- **终端连不上**：确认 Docker Desktop 已启动且为 Linux 容器模式；实验页面有「重连终端/重开实验」按钮
+- **改代码后**：`bash scripts/build-backend.sh` 再重启（前端会自动内嵌进 jar）
+- **重置学习数据**：`docker exec devopshelper-mysql mysql -uroot -pdevops123 -e "DROP DATABASE devops_helper; CREATE DATABASE devops_helper CHARACTER SET utf8mb4"` 后重启后端（种子内容会重新导入，自建题目会丢）
 
-## 常见问题
+## 🤝 贡献
 
-- **3306/3307 端口被占用**：本机已有其他 MySQL。本项目开发库固定用 **3316** 端口。
-- **后端起不来报连接失败**：先 `bash scripts/dev-mysql.sh` 确认 MySQL 容器在跑。
-- **实验容器连不上**：确认 Docker Desktop 已启动且处于 Linux 容器模式。
-- **终端中文乱码**：容器已配置 `LANG=C.UTF-8`，若仍有问题刷新页面重连。
-- **重置所有学习数据**：`docker exec devopshelper-mysql mysql -uroot -pdevops123 -e "DROP DATABASE devops_helper; CREATE DATABASE devops_helper CHARACTER SET utf8mb4"` 后重启后端（题库种子会重新导入，自建题目会丢失）。
+欢迎 Issue / PR：新增题目与实验（编辑 `scripts/content/` 数据文件即可）、修复 bug、改进文档。
+
+## 📄 License
+
+[MIT](LICENSE) — 实验沙箱环境仅供学习用途，请勿用于未授权的测试目标。

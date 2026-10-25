@@ -2,8 +2,10 @@
 chcp 936 >nul
 title DevOpsHelper OneKey Start
 setlocal enabledelayedexpansion
-set "ROOT=F:\code-java\devopsHepler"
+rem 自动定位项目根目录（脚本在 scripts 下，上级即根）
+set "ROOT=%~dp0.."
 set "JAVAW=%ROOT%\.tools\jdk-17.0.20.1+1\bin\javaw.exe"
+if not exist "%JAVAW%" set "JAVAW=javaw.exe"
 set "JAR=%ROOT%\backend\target\devops-helper-0.1.0-SNAPSHOT.jar"
 set "URL=http://127.0.0.1:9800"
 cd /d "%ROOT%"
@@ -51,7 +53,7 @@ echo [错误] MySQL 未就绪，排查: docker logs devopshelper-mysql
 pause
 exit /b 1
 :mysql_ok
-echo [2/4] MySQL 已就绪 localhost:3316
+echo [2/4] MySQL 已就绪
 
 REM ---------- 3/4 后端（同时托管前端页面） ----------
 netstat -ano | findstr ":9800" | findstr "LISTENING" >nul
@@ -70,15 +72,15 @@ netstat -ano | findstr ":9800" | findstr "LISTENING" >nul
 if not errorlevel 1 goto backend_ok
 set /a BE_TRIES+=1
 if !BE_TRIES! lss 25 goto wait_backend
-echo [错误] 后端启动失败，日志: .tools\backend.log
+echo [错误] 后端启动失败，日志: logs/backend.log
 pause
 exit /b 1
 :backend_ok
 echo [3/4] 后端已就绪
 
 REM ---------- 4/4 校验页面并打开浏览器 ----------
-%SystemRoot%\System32\curl.exe -s -m 8 -o "%ROOT%\.tools\page-check.tmp" %URL%/
-findstr /i /c:"<html" "%ROOT%\.tools\page-check.tmp" >nul 2>&1
+%SystemRoot%\System32\curl.exe -s -m 8 -o "%ROOT%\logs\page-check.tmp" %URL%/
+findstr /i /c:"<html" "%ROOT%\logs\page-check.tmp" >nul 2>&1
 if errorlevel 1 (
     echo [错误] 后端在运行但页面未托管！请执行: bash scripts/build-backend.sh 后重新双击本快捷方式
     pause
