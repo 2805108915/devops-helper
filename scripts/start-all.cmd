@@ -1,4 +1,3 @@
-cd /d "%ROOT%"
 @echo off
 chcp 936 >nul
 title DevOpsHelper OneKey Start
@@ -6,7 +5,7 @@ setlocal enabledelayedexpansion
 set "ROOT=F:\code-java\devopsHepler"
 set "JAVAW=%ROOT%\.tools\jdk-17.0.20.1+1\bin\javaw.exe"
 set "JAR=%ROOT%\backend\target\devops-helper-0.1.0-SNAPSHOT.jar"
-cd /d "%ROOT%
+cd /d "%ROOT%"
 
 echo ==========================================
 echo        DevOpsHelper Ò»¼üÆô¶¯
