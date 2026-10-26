@@ -87,10 +87,12 @@ if errorlevel 1 (
     exit /b 1
 )
 echo [4/4] 页面校验通过，打开浏览器...
+echo 提示: 若浏览器弹出权限询问（Edge 未响应），点【是】即可正常打开
 start "" "%URL%"
 echo.
 echo ==========================================
 echo   启动完成！访问地址: %URL%
+echo   如浏览器未自动打开，请手动访问上述地址
 echo   停止服务: scripts\stop-all.cmd
 echo ==========================================
 timeout /t 6 >nul
