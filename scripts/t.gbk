@@ -3,3 +3,4 @@ chcp 936 >nul
 title DevOpsHelper OneKey Start
 setlocal enabledelayedexpansion
 rem 
+iconv: start-all.cmd:5:4: cannot convert

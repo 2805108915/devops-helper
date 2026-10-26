@@ -2,7 +2,7 @@
 
 > **DevOpsHelper** — An open-source ops/SRE learning platform: categorized interview questions, **real Linux sandboxes in your browser**, spaced repetition, a personal knowledge base, and optional AI assistance.
 >
-> 面向运维/DevOps/SRE 学习者与求职者的单用户本地学习工具：**1000 道精选面试题 + 100 个真实容器实操实验 + 102 篇知识库笔记 + SM-2 间隔复习 + 可选 AI 模拟面试**。
+> 面向运维/DevOps/SRE 学习者与求职者的单用户本地学习工具：**1067 道精选面试题（11 大知识点含云计算）+ 100 个真实容器实操实验 + 102 篇知识库笔记 + SM-2 间隔复习 + 可选 AI 模拟面试**。
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 

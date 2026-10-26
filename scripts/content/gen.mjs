@@ -10,10 +10,10 @@ const root = resolve(dirname(fileURLToPath(import.meta.url)), '../..')
 const out = []
 
 const topicCode = {
-  linux: 1, network: 2, shell: 3, nginx: 4, docker: 5, k8s: 6, cicd: 7, monitor: 8, mysql: 9, mw: 10
+  linux: 1, network: 2, shell: 3, nginx: 4, docker: 5, k8s: 6, cicd: 7, monitor: 8, mysql: 9, mw: 10, cloud: 11
 }
 // 补充数据文件别名：q_linux2.mjs → linux
-const alias = { linux2: 'linux', network2: 'network', shell2: 'shell', nginx2: 'nginx', docker2: 'docker', k8s2: 'k8s', cicd2: 'cicd', monitor2: 'monitor', mysql2: 'mysql', mw2: 'mw', linux3: 'linux', network3: 'network', shell3: 'shell', nginx3: 'nginx', docker3: 'docker', k8s3: 'k8s', cicd3: 'cicd', monitor3: 'monitor', mysql3: 'mysql', mw3: 'mw', linux4: 'linux', network4: 'network', shell4: 'shell', nginx4: 'nginx', docker4: 'docker', k8s4: 'k8s', cicd4: 'cicd', monitor4: 'monitor', mysql4: 'mysql', mw4: 'mw', misc: 'linux' }
+const alias = { linux2: 'linux', network2: 'network', shell2: 'shell', nginx2: 'nginx', docker2: 'docker', k8s2: 'k8s', cicd2: 'cicd', monitor2: 'monitor', mysql2: 'mysql', mw2: 'mw', linux3: 'linux', network3: 'network', shell3: 'shell', nginx3: 'nginx', docker3: 'docker', k8s3: 'k8s', cicd3: 'cicd', monitor3: 'monitor', mysql3: 'mysql', mw3: 'mw', linux4: 'linux', network4: 'network', shell4: 'shell', nginx4: 'nginx', docker4: 'docker', k8s4: 'k8s', cicd4: 'cicd', monitor4: 'monitor', mysql4: 'mysql', mw4: 'mw', misc: 'linux', cloud2: 'cloud', cloud3: 'cloud' }
 
 const esc = s => String(s ?? '').replace(/'/g, "''")
 const jstr = v => `'` + JSON.stringify(v ?? null).replace(/'/g, "''").replace(/"/g, '\\"') + `'`
@@ -46,6 +46,10 @@ for (const f of topicFiles) {
     qBatches[q.to || code] = [...(qBatches[q.to || code] || []), questionValue(t2, q)]
   }
 }
+// 云计算批次分流到 V16（V14 已应用，Flyway 校验和限制不可再改）
+const cloudValues = qBatches['cloud'] || []
+delete qBatches['cloud']
+
 let sql = '-- 自动生成（scripts/content/gen.mjs），请勿手改\n'
 for (const [code, values] of Object.entries(qBatches)) {
   sql += `\nINSERT INTO question (topic_id, type, difficulty, title, content, options, answer, follow_ups, tags, frequency, position_codes, source) VALUES\n${values.join(',\n')};\n`
@@ -62,6 +66,14 @@ for (const art of kbMod.ARTICLES) {
 }
 sql += `\nINSERT INTO kb_article (topic_id, title, content_md) VALUES\n${kbValues.join(',\n')};\n`
 writeFileSync(resolve(root, 'backend/src/main/resources/db/migration/V14__expand_content.sql'), sql)
+
+// 云计算：新知识点 + 题目（独立迁移 V16）
+if (cloudValues.length) {
+  let sql16 = '-- 自动生成（scripts/content/gen.mjs），请勿手改\n'
+  sql16 += `\nINSERT INTO topic (id, code, name, description, icon, sort_order, builtin) VALUES (11, 'cloud', '云计算', '云产品与云上架构运维（VPC/OSS/CDN/RDS/负载均衡/弹性/安全/成本/IaC）', 'Cloud', 11, 1);\n`
+  sql16 += `\nINSERT INTO question (topic_id, type, difficulty, title, content, options, answer, follow_ups, tags, frequency, position_codes, source) VALUES\n${cloudValues.join(',\n')};\n`
+  writeFileSync(resolve(root, 'backend/src/main/resources/db/migration/V16__cloud_content.sql'), sql16)
+}
 
 // ---------- Labs ----------
 const labMod1 = await import('./labs_data.mjs')
