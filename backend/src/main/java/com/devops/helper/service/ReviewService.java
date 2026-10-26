@@ -96,6 +96,13 @@ public class ReviewService {
         return result;
     }
 
+    /** 重置题目为未学（删除复习记录；复习流水保留作为历史） */
+    @Transactional
+    public void reset(Long questionId) {
+        reviewRecordMapper.delete(new LambdaQueryWrapper<ReviewRecord>()
+                .eq(ReviewRecord::getQuestionId, questionId));
+    }
+
     /** 今日到期复习队列 */
     public List<Question> todayQueue(int limit) {
         List<ReviewRecord> due = reviewRecordMapper.selectList(

@@ -30,6 +30,7 @@ export default {
   deleteQuestion: id => http.delete(`/questions/${id}`),
   // 复习
   review: (questionId, quality) => http.post(`/review/${questionId}`, { quality }),
+  reviewReset: questionId => http.delete(`/review/${questionId}`),
   reviewToday: limit => http.get('/review/today', { params: { limit } }),
   reviewStats: () => http.get('/review/stats'),
   // 笔记

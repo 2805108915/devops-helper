@@ -27,6 +27,13 @@ public class ReviewController {
         return Result.ok(reviewService.review(questionId, quality));
     }
 
+    /** 重置为未学：删除该题的复习记录 */
+    @DeleteMapping("/{questionId}")
+    public Result<Void> reset(@PathVariable Long questionId) {
+        reviewService.reset(questionId);
+        return Result.ok();
+    }
+
     /** 今日到期复习队列 */
     @GetMapping("/today")
     public Result<List<Question>> today(@RequestParam(defaultValue = "50") int limit) {

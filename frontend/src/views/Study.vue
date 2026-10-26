@@ -12,6 +12,7 @@
           {{ ['', '初级', '中级', '高级'][q.difficulty] }}
         </el-tag>
         <el-tag v-if="q.frequency >= 5" size="small" type="danger" effect="dark">高频必考</el-tag>
+        <el-tag size="small" :type="statusTag" effect="dark">{{ statusText }}</el-tag>
       </div>
       <div class="spacer" />
       <span class="pos">{{ index + 1 }} / {{ ids.length }}</span>
@@ -44,6 +45,22 @@
       </template>
     </el-card>
 
+    <!-- 题目状态标记 -->
+    <el-card class="page-card">
+      <div class="sec-title">📌 标记本题状态（会自动进入复习计划）</div>
+      <div class="status-row">
+        <el-tag :type="statusTag" size="large" effect="dark">{{ statusText }}</el-tag>
+        <span v-if="nextReviewText" class="next-review">🗓 {{ nextReviewText }}</span>
+      </div>
+      <div class="status-btns">
+        <el-button type="success" :plain="lastQuality !== 5" @click="mark(5)">✅ 标记掌握</el-button>
+        <el-button type="warning" :plain="lastQuality !== 3" @click="mark(3)">🤔 标记模糊</el-button>
+        <el-button type="danger" :plain="!(lastQuality !== null && lastQuality < 3)" @click="mark(1)">❌ 标记不会</el-button>
+        <el-button v-if="lastQuality !== null" plain @click="resetStatus">♻ 重置为未学</el-button>
+      </div>
+      <div v-if="assessMsg" class="assess-msg">{{ assessMsg }}</div>
+    </el-card>
+
     <!-- 面试语境 -->
     <el-card class="page-card">
       <div class="sec-title">💼 出题语境（面试官视角）</div>
@@ -69,17 +86,10 @@
       </div>
     </el-card>
 
-    <!-- 笔记 + 自评 -->
+    <!-- 笔记 -->
     <el-card class="page-card">
       <div class="sec-title">📝 我的笔记（自动保存）</div>
       <el-input v-model="note" type="textarea" :rows="3" placeholder="记录你的理解、口诀、踩坑..." />
-      <div class="assess">
-        <span class="assess-label">自评：</span>
-        <el-button :type="lastQuality === 1 ? 'danger' : ''" size="small" @click="assess(1)">❌ 不会</el-button>
-        <el-button :type="lastQuality === 3 ? 'warning' : ''" size="small" @click="assess(3)">🤔 模糊</el-button>
-        <el-button :type="lastQuality === 5 ? 'success' : ''" size="small" @click="assess(5)">✅ 会</el-button>
-        <span v-if="assessMsg" class="assess-msg">{{ assessMsg }}</span>
-      </div>
     </el-card>
 
     <!-- 底部导航 -->
@@ -114,6 +124,12 @@ const selectedOption = ref(-1)
 const note = ref('')
 const assessMsg = ref('')
 const lastQuality = ref(null)
+const nextReviewText = ref('')
+
+const statusText = computed(() =>
+  lastQuality.value == null ? '未学' : lastQuality.value < 3 ? '生疏' : lastQuality.value < 5 ? '模糊' : '掌握')
+const statusTag = computed(() =>
+  lastQuality.value == null ? 'info' : lastQuality.value < 3 ? 'danger' : lastQuality.value < 5 ? 'warning' : 'success')
 
 const prevId = computed(() => (index.value > 0 ? ids.value[index.value - 1] : null))
 const nextId = computed(() => (index.value < ids.value.length - 1 ? ids.value[index.value + 1] : null))
@@ -146,9 +162,14 @@ async function load() {
   selectedOption.value = -1
   assessMsg.value = ''
   lastQuality.value = null
+  nextReviewText.value = ''
   detail.value = await api.questionDetail(Number(route.params.id))
   note.value = detail.value.note?.content || ''
-  if (detail.value.review) lastQuality.value = detail.value.review.quality
+  const rv = detail.value.review
+  if (rv) {
+    lastQuality.value = rv.quality
+    nextReviewText.value = `下次复习：${String(rv.nextReviewAt).replace('T', ' ').slice(0, 16)}`
+  }
 }
 
 function isCorrect(i) {
@@ -165,10 +186,18 @@ watch(note, () => {
   }, 800)
 })
 
-async function assess(quality) {
+async function mark(quality) {
   const res = await api.review(detail.value.question.id, quality)
   lastQuality.value = quality
-  assessMsg.value = `已记录，下次复习：${res.nextReviewAt.replace('T', ' ').slice(0, 16)}`
+  nextReviewText.value = `下次复习：${res.nextReviewAt.replace('T', ' ').slice(0, 16)}`
+  assessMsg.value = '状态已更新，题库列表与复习计划同步生效'
+}
+
+async function resetStatus() {
+  await api.reviewReset(detail.value.question.id)
+  lastQuality.value = null
+  nextReviewText.value = ''
+  assessMsg.value = '已重置为未学'
 }
 
 function go(id) {
@@ -210,8 +239,9 @@ onMounted(async () => {
 .ctx-tags { margin-top: 10px; display: flex; gap: 6px; flex-wrap: wrap; }
 .ctx-positions { margin-top: 8px; color: #909399; font-size: 13px; display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
 .rel-articles { margin-top: 10px; display: flex; gap: 8px; flex-wrap: wrap; }
-.assess { margin-top: 12px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
-.assess-label { color: #606266; font-size: 14px; }
-.assess-msg { color: #67c23a; font-size: 13px; }
+.assess-msg { color: #67c23a; font-size: 13px; margin-top: 10px; }
+.status-row { display: flex; gap: 14px; align-items: center; margin-bottom: 12px; }
+.status-btns { display: flex; gap: 10px; flex-wrap: wrap; }
+.next-review { color: #909399; font-size: 13px; }
 .nav-bar { position: fixed; bottom: 0; left: 210px; right: 0; background: #fff; border-top: 1px solid #ebeef5; padding: 10px 24px; display: flex; gap: 14px; justify-content: center; z-index: 10; box-shadow: 0 -2px 8px rgba(0,0,0,.04); }
 </style>
