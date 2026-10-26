@@ -23,4 +23,7 @@ public class Topic {
     private String icon;
 
     private Integer sortOrder;
+
+    /** 1=内置知识点(不可删除) 0=用户自建分组 */
+    private Integer builtin;
 }

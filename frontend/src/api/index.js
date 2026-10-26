@@ -21,6 +21,8 @@ http.interceptors.response.use(
 export default {
   // 题库
   topics: () => http.get('/topics'),
+  topicCreate: data => http.post('/topics', data),
+  topicDelete: id => http.delete(`/topics/${id}`),
   questions: params => http.get('/questions', { params }),
   questionDetail: id => http.get(`/questions/${id}`),
   createQuestion: data => http.post('/questions', data),
@@ -39,6 +41,8 @@ export default {
   kbCreate: data => http.post('/kb', data),
   kbUpdate: (id, data) => http.put(`/kb/${id}`, data),
   kbDelete: id => http.delete(`/kb/${id}`),
+  kbHistory: id => http.get(`/kb/${id}/history`),
+  kbRestore: (id, historyId) => http.post(`/kb/${id}/history/${historyId}/restore`),
   // 岗位
   positions: () => http.get('/positions'),
   // 实验室
