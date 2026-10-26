@@ -1,0 +1,4 @@
+# 批处理必须CRLF换行（LF会导致cmd解析断行）
+*.cmd text eol=crlf
+*.bat text eol=crlf
+*.sh text eol=lf
